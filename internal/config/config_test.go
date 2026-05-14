@@ -18,7 +18,7 @@ func TestSaveCreates0600File0700Dir(t *testing.T) {
 
 	c := Get()
 	c.FeedKey = "abcdef0123456789"
-	c.APIURL = "https://mp2rss.bugcode.dev/api"
+	c.APIURL = "https://mp2rss.bugcode.dev"
 	if err := c.Save(); err != nil {
 		t.Fatalf("Save: %v", err)
 	}
@@ -75,7 +75,7 @@ func TestEffectiveAPIURL_EnvWins(t *testing.T) {
 	reset()
 
 	c := Get()
-	c.APIURL = "https://mp2rss.bugcode.dev/api"
+	c.APIURL = "https://mp2rss.bugcode.dev"
 	if got, want := c.EffectiveAPIURL(), "https://override.example.com"; got != want {
 		t.Errorf("EffectiveAPIURL = %q, want %q", got, want)
 	}

@@ -14,7 +14,7 @@ func TestStatusDTOShape(t *testing.T) {
 	dto := statusDTO{
 		LoggedIn:      true,
 		Source:        "config",
-		APIURL:        "https://mp2rss.bugcode.dev/api",
+		APIURL:        "https://mp2rss.bugcode.dev",
 		FeedKeyMasked: "abcdef***",
 		LastLoginAt:   1_705_000_000_000,
 		LastVerifyAt:  1_705_000_001_000,

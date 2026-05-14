@@ -57,7 +57,7 @@ mp2rss mp list -o json | jq '.items[].mpName'
 ```json
 {
   "feed_key": "9f3a2c...（64 位 hex）",
-  "api_url": "https://mp2rss.bugcode.dev/api",
+  "api_url": "https://mp2rss.bugcode.dev",
   "last_login_at": 1747194198,
   "last_verify_at": 1747194198
 }
@@ -72,7 +72,7 @@ mp2rss mp list -o json | jq '.items[].mpName'
 - 登录：<https://mp2rss.bugcode.dev/cli/login>
 - 命令参考：<https://mp2rss.bugcode.dev/cli/commands>
 - FAQ：<https://mp2rss.bugcode.dev/cli/faq>
-- API 参考：<https://mp2rss.bugcode.dev/api/>
+- API 参考：<https://mp2rss.bugcode.dev/>
 
 ## License
 

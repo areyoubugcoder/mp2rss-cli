@@ -14,7 +14,7 @@ import (
 )
 
 // DefaultAPIBaseURL is the production mp2rss Open API endpoint.
-const DefaultAPIBaseURL = "https://mp2rss.bugcode.dev/api"
+const DefaultAPIBaseURL = "https://mp2rss.bugcode.dev"
 
 // Config is the on-disk representation of the CLI state.
 type Config struct {
