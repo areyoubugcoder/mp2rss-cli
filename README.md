@@ -19,7 +19,7 @@ curl -fsSL https://raw.githubusercontent.com/areyoubugcoder/mp2rss-cli/main/scri
 pnpm add -g @mp2rss/cli
 ```
 
-也可在 [Releases](https://github.com/areyoubugcoder/mp2rss-cli/releases/latest) 直接下载对应平台二进制。完整安装与卸载说明见 [文档站 · 安装](https://mp2rss.bugcode.dev/cli/install)。
+也可在 [Releases](https://github.com/areyoubugcoder/mp2rss-cli/releases/latest) 直接下载对应平台二进制。完整安装与卸载说明见 [文档站 · 安装](https://areyoubugcoder.github.io/Mp2RSS/cli/install)。
 
 ## 用法
 
@@ -44,7 +44,7 @@ mp2rss mp list -o json | jq '.items[].mpName'
 | `mp2rss mp articles <mpId>` | 历史文章 |
 | `mp2rss update` | 自更新（`--check` / `--force`） |
 
-完整命令参考见 [文档站 · 命令参考](https://mp2rss.bugcode.dev/cli/commands)。
+完整命令参考见 [文档站 · 命令参考](https://areyoubugcoder.github.io/Mp2RSS/cli/commands)。
 
 ## 配置
 
@@ -63,11 +63,11 @@ mp2rss mp list -o json | jq '.items[].mpName'
 
 ## 文档
 
-- 简介：<https://mp2rss.bugcode.dev/cli/>
-- 安装：<https://mp2rss.bugcode.dev/cli/install>
-- 登录：<https://mp2rss.bugcode.dev/cli/login>
-- 命令参考：<https://mp2rss.bugcode.dev/cli/commands>
-- FAQ：<https://mp2rss.bugcode.dev/cli/faq>
+- 简介：<https://areyoubugcoder.github.io/Mp2RSS/cli/>
+- 安装：<https://areyoubugcoder.github.io/Mp2RSS/cli/install>
+- 登录：<https://areyoubugcoder.github.io/Mp2RSS/cli/login>
+- 命令参考：<https://areyoubugcoder.github.io/Mp2RSS/cli/commands>
+- FAQ：<https://areyoubugcoder.github.io/Mp2RSS/cli/faq>
 - API 参考：<https://mp2rss.bugcode.dev/>
 
 ## 在 Claude Code 中使用
