@@ -45,12 +45,12 @@ func TestAuthorizeURL_Composition(t *testing.T) {
 }
 
 func TestWait_SuccessfulCallback(t *testing.T) {
-	f, err := New("http://localhost:5173")
+	f, err := New("http://localhost:3000")
 	if err != nil {
 		t.Fatal(err)
 	}
 	f.Timeout = 5 * time.Second
-	f.AllowedOrigins = []string{"http://localhost:5173"}
+	f.AllowedOrigins = []string{"http://localhost:3000"}
 
 	done := make(chan struct {
 		res *CallbackResult
@@ -68,7 +68,7 @@ func TestWait_SuccessfulCallback(t *testing.T) {
 	time.Sleep(50 * time.Millisecond)
 	body, _ := json.Marshal(map[string]string{"feed_key": "k1", "state": f.State})
 	req, _ := http.NewRequest(http.MethodPost, f.CallbackURL(), bytes.NewReader(body))
-	req.Header.Set("Origin", "http://localhost:5173")
+	req.Header.Set("Origin", "http://localhost:3000")
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -93,12 +93,12 @@ func TestWait_SuccessfulCallback(t *testing.T) {
 }
 
 func TestWait_BadStateRejected(t *testing.T) {
-	f, err := New("http://localhost:5173")
+	f, err := New("http://localhost:3000")
 	if err != nil {
 		t.Fatal(err)
 	}
 	f.Timeout = 2 * time.Second
-	f.AllowedOrigins = []string{"http://localhost:5173"}
+	f.AllowedOrigins = []string{"http://localhost:3000"}
 
 	done := make(chan error, 1)
 	go func() {
@@ -109,7 +109,7 @@ func TestWait_BadStateRejected(t *testing.T) {
 
 	body, _ := json.Marshal(map[string]string{"feed_key": "k1", "state": "wrong"})
 	req, _ := http.NewRequest(http.MethodPost, f.CallbackURL(), bytes.NewReader(body))
-	req.Header.Set("Origin", "http://localhost:5173")
+	req.Header.Set("Origin", "http://localhost:3000")
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -134,12 +134,12 @@ func TestWait_BadStateRejected(t *testing.T) {
 }
 
 func TestWait_OriginRejected(t *testing.T) {
-	f, err := New("http://localhost:5173")
+	f, err := New("http://localhost:3000")
 	if err != nil {
 		t.Fatal(err)
 	}
 	f.Timeout = 1500 * time.Millisecond
-	f.AllowedOrigins = []string{"http://localhost:5173"}
+	f.AllowedOrigins = []string{"http://localhost:3000"}
 
 	done := make(chan error, 1)
 	go func() {
@@ -173,7 +173,7 @@ func TestWait_OriginRejected(t *testing.T) {
 }
 
 func TestWait_Timeout(t *testing.T) {
-	f, err := New("http://localhost:5173")
+	f, err := New("http://localhost:3000")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -190,13 +190,15 @@ func TestWait_Timeout(t *testing.T) {
 	}
 }
 
-func TestOptionsPreflight(t *testing.T) {
-	f, err := New("http://localhost:5173")
+// TestLoopbackCORSPreflight covers the OPTIONS preflight contract required by
+// browsers when the Web app POSTs JSON to the loopback server.
+func TestLoopbackCORSPreflight(t *testing.T) {
+	f, err := New("http://localhost:3000")
 	if err != nil {
 		t.Fatal(err)
 	}
 	f.Timeout = 500 * time.Millisecond
-	f.AllowedOrigins = []string{"http://localhost:5173"}
+	f.AllowedOrigins = []string{"http://localhost:3000"}
 
 	go func() {
 		_, _ = f.Wait(context.Background())
@@ -204,16 +206,79 @@ func TestOptionsPreflight(t *testing.T) {
 	time.Sleep(50 * time.Millisecond)
 
 	req, _ := http.NewRequest(http.MethodOptions, f.CallbackURL(), nil)
-	req.Header.Set("Origin", "http://localhost:5173")
+	req.Header.Set("Origin", "http://localhost:3000")
+	req.Header.Set("Access-Control-Request-Method", "POST")
+	req.Header.Set("Access-Control-Request-Headers", "Content-Type")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatalf("OPTIONS failed: %v", err)
 	}
 	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusNoContent {
 		t.Errorf("status = %d, want 204", resp.StatusCode)
 	}
-	if got := resp.Header.Get("Access-Control-Allow-Origin"); got != "http://localhost:5173" {
-		t.Errorf("CORS origin = %q", got)
+
+	check := []struct{ header, want string }{
+		{"Access-Control-Allow-Origin", "http://localhost:3000"},
+		{"Access-Control-Allow-Methods", "POST, OPTIONS"},
+		{"Access-Control-Allow-Headers", "Content-Type"},
+		{"Access-Control-Max-Age", "600"},
+	}
+	for _, c := range check {
+		if got := resp.Header.Get(c.header); got != c.want {
+			t.Errorf("%s = %q, want %q", c.header, got, c.want)
+		}
+	}
+}
+
+// TestLoopbackCORSOnPOST verifies the actual POST response also carries the
+// Allow-Origin header — without it the browser strips the response from JS.
+func TestLoopbackCORSOnPOST(t *testing.T) {
+	f, err := New("http://localhost:3000")
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.Timeout = 2 * time.Second
+	f.AllowedOrigins = []string{"http://localhost:3000"}
+
+	go func() { _, _ = f.Wait(context.Background()) }()
+	time.Sleep(50 * time.Millisecond)
+
+	body, _ := json.Marshal(map[string]string{"feed_key": "k", "state": f.State})
+	req, _ := http.NewRequest(http.MethodPost, f.CallbackURL(), bytes.NewReader(body))
+	req.Header.Set("Origin", "http://localhost:3000")
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("POST failed: %v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("status = %d, want 200", resp.StatusCode)
+	}
+	if got := resp.Header.Get("Access-Control-Allow-Origin"); got != "http://localhost:3000" {
+		t.Errorf("Allow-Origin = %q, want http://localhost:3000", got)
+	}
+}
+
+// TestLoopbackIPv6LocalhostAccepted ensures http://[::1]:3000 is in the
+// default allow-list so browsers that resolve localhost via IPv6 work.
+func TestLoopbackIPv6LocalhostAccepted(t *testing.T) {
+	want := "http://[::1]:3000"
+	found := false
+	for _, o := range AllowedOrigins {
+		if o == want {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("AllowedOrigins missing %q (got %v)", want, AllowedOrigins)
+	}
+	for _, o := range AllowedOrigins {
+		if o == "http://localhost:5173" {
+			t.Errorf("AllowedOrigins should not contain stale :5173 origin")
+		}
 	}
 }

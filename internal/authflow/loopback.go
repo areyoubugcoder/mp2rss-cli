@@ -34,11 +34,14 @@ import (
 const DefaultTimeout = 120 * time.Second
 
 // AllowedOrigins are the only Origin headers we'll accept.
-// localhost dev origins are included so contributors can iterate locally.
+//
+// Web 端 vite dev 默认起在 :3000（apps/web vite.config 已固定），生产是
+// https://mp2rss.com。同一台机器同时通过 IPv4 / IPv6 解析 localhost 时
+// 浏览器可能发出 http://[::1]:3000，所以两条都列上。
 var AllowedOrigins = []string{
 	"https://mp2rss.com",
-	"http://localhost:5173",
 	"http://localhost:3000",
+	"http://[::1]:3000",
 }
 
 // CallbackResult is what the browser POSTs to /cli/callback.
@@ -173,9 +176,10 @@ func (f *Flow) handleCallback(w http.ResponseWriter, r *http.Request) {
 	allowed := f.originAllowed(origin)
 	if allowed {
 		w.Header().Set("Access-Control-Allow-Origin", origin)
+		w.Header().Set("Vary", "Origin")
 		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-		w.Header().Set("Access-Control-Max-Age", "60")
+		w.Header().Set("Access-Control-Max-Age", "600")
 	}
 	if r.Method == http.MethodOptions {
 		w.WriteHeader(http.StatusNoContent)
