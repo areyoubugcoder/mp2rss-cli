@@ -1,7 +1,7 @@
 {
   "id": "mp2rss-cli",
   "name": "mp2rss CLI",
-  "description": "Agent skills for the mp2rss CLI: subscribe / list / remove WeChat 公众号 RSS sources and fetch their historical articles via mp2rss. Bundles two skills (mp2rss-auth, mp2rss-mp); requires the mp2rss binary on PATH.",
+  "description": "WeChat 公众号 → RSS feed CLI. mp2rss agent skills for Claude Code / OpenClaw: subscribe to a WeChat official account by article URL (mp.weixin.qq.com/s/...), list / search / remove subscriptions, fetch historical articles, and manage browser login. 把微信公众号转成 RSS 订阅源，命令行管理订阅、查看历史文章。Bundles mp2rss-auth (browser loopback login, token storage) + mp2rss-mp (subscribe / list / search / remove / articles). Requires the mp2rss binary on PATH. Keywords: wechat, weixin, 微信, 公众号, official-account, rss, feed, atom, subscription, 订阅, mp.weixin.qq.com, news-reader, content-aggregator.",
   "contracts": {
     "tools": ["mp2rss"]
   },

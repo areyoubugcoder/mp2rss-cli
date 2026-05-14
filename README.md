@@ -68,7 +68,6 @@ mp2rss mp list -o json | jq '.items[].mpName'
 - 登录：<https://areyoubugcoder.github.io/Mp2RSS/cli/login>
 - 命令参考：<https://areyoubugcoder.github.io/Mp2RSS/cli/commands>
 - FAQ：<https://areyoubugcoder.github.io/Mp2RSS/cli/faq>
-- API 参考：<https://mp2rss.bugcode.dev/>
 
 ## 在 Claude Code 中使用
 
@@ -77,6 +76,12 @@ mp2rss 提供 Claude Code agent skills，让你在 Claude Code 里用自然语�
 ```
 /plugin marketplace add areyoubugcoder/mp2rss-cli
 /plugin install mp2rss-cli@mp2rss
+```
+
+或通过 [ClawHub](https://clawhub.ai/mp2rss/mp2rss-cli) 安装到 OpenClaw / Codex / 其他兼容 host：
+
+```
+clawhub package install mp2rss-cli
 ```
 
 之后可以直接说：
