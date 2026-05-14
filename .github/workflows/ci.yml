@@ -45,3 +45,37 @@ jobs:
           make build
           ./mp2rss --version
           ls -lh mp2rss
+
+  npm-pack-check:
+    name: verify npm tarball contents
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Assert bin entries are present in the published tarball
+        # 防止 .gitignore / files allowlist / bin path 配置错误导致发包后
+        # 二进制 shim 缺失。曾因 .gitignore 屏蔽 /npm/bin/ 把 bin/mp2rss.js
+        # 漏发到 npm，引发版本号被迫递增。
+        working-directory: npm
+        run: |
+          set -eu
+          node -e "
+            const fs = require('fs');
+            const { execSync } = require('child_process');
+            const pkg = require('./package.json');
+            const out = execSync('npm pack --dry-run --json', { encoding: 'utf-8' });
+            const files = JSON.parse(out)[0].files.map(f => f.path);
+            const bin = typeof pkg.bin === 'string' ? [pkg.bin] : Object.values(pkg.bin || {});
+            const missing = bin.filter(b => !files.includes(b));
+            if (missing.length) {
+              console.error('Missing bin entries from tarball:', missing);
+              console.error('Tarball contents:', files);
+              process.exit(1);
+            }
+            console.log('All bin entries present:', bin);
+            console.log('Tarball files:', files);
+          "
