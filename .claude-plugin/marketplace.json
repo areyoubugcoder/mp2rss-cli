@@ -1,0 +1,19 @@
+{
+  "name": "mp2rss",
+  "description": "mp2rss CLI agent skills marketplace",
+  "owner": {
+    "name": "areyoubugcoder"
+  },
+  "plugins": [
+    {
+      "name": "mp2rss-cli",
+      "source": "./",
+      "description": "Agent skills for the mp2rss CLI: auth / mp",
+      "homepage": "https://mp2rss.bugcode.dev",
+      "repository": "https://github.com/areyoubugcoder/mp2rss-cli",
+      "license": "MIT",
+      "keywords": ["mp2rss", "rss", "wechat", "mp", "subscription", "feed"],
+      "category": "productivity"
+    }
+  ]
+}

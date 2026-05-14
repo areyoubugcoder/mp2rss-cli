@@ -6,7 +6,6 @@
 [![Downloads](https://img.shields.io/github/downloads/areyoubugcoder/mp2rss-cli/total)](https://github.com/areyoubugcoder/mp2rss-cli/releases)
 [![npm](https://img.shields.io/npm/v/@mp2rss/cli)](https://www.npmjs.com/package/@mp2rss/cli)
 [![npm downloads](https://img.shields.io/npm/dm/@mp2rss/cli)](https://www.npmjs.com/package/@mp2rss/cli)
-[![CI](https://github.com/areyoubugcoder/mp2rss-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/areyoubugcoder/mp2rss-cli/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/areyoubugcoder/mp2rss-cli)](https://goreportcard.com/report/github.com/areyoubugcoder/mp2rss-cli)
 
@@ -18,9 +17,6 @@ curl -fsSL https://raw.githubusercontent.com/areyoubugcoder/mp2rss-cli/main/scri
 
 # npm（Node ≥ 18）
 pnpm add -g @mp2rss/cli
-
-# 源码（Go ≥ 1.21）
-git clone https://github.com/areyoubugcoder/mp2rss-cli.git && cd mp2rss-cli && make build
 ```
 
 也可在 [Releases](https://github.com/areyoubugcoder/mp2rss-cli/releases/latest) 直接下载对应平台二进制。完整安装与卸载说明见 [文档站 · 安装](https://mp2rss.bugcode.dev/cli/install)。
@@ -73,6 +69,24 @@ mp2rss mp list -o json | jq '.items[].mpName'
 - 命令参考：<https://mp2rss.bugcode.dev/cli/commands>
 - FAQ：<https://mp2rss.bugcode.dev/cli/faq>
 - API 参考：<https://mp2rss.bugcode.dev/>
+
+## 在 Claude Code 中使用
+
+mp2rss 提供 Claude Code agent skills，让你在 Claude Code 里用自然语言调用 CLI。在 Claude Code 中：
+
+```
+/plugin marketplace add areyoubugcoder/mp2rss-cli
+/plugin install mp2rss-cli@mp2rss
+```
+
+之后可以直接说：
+
+- 「登录公众号 RSS 服务」
+- 「订阅这个公众号 https://mp.weixin.qq.com/s/...」
+- 「我订阅了哪些公众号」
+- 「这个公众号 <mpId> 最近发了什么」
+
+包含两个 skill：[`mp2rss-auth`](skills/mp2rss-auth/SKILL.md)（登录态管理）与 [`mp2rss-mp`](skills/mp2rss-mp/SKILL.md)（订阅与文章）。
 
 ## License
 
