@@ -14,7 +14,7 @@ mp2rss CLI 的登录态管理 —— 登录、登出、查看 Feed Key 与登录
 
 ```bash
 # 一键安装（macOS / Linux）
-curl -fsSL https://mp2rss.com/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/areyoubugcoder/mp2rss-cli/main/scripts/install.sh | sh
 
 # npm（Node ≥ 18）
 pnpm add -g @mp2rss/cli
