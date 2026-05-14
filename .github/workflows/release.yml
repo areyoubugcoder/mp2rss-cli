@@ -122,12 +122,11 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           registry-url: 'https://registry.npmjs.org'
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
+      - name: Upgrade npm to latest (>= 11.5.1 for Trusted Publishing)
+        run: npm install -g npm@latest
 
       - name: Sync npm/package.json version
         working-directory: npm
@@ -144,4 +143,4 @@ jobs:
       - name: Publish
         working-directory: npm
         run: |
-          pnpm publish --access public --no-git-checks --provenance
+          npm publish --access public --provenance
