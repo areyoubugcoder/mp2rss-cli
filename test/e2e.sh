@@ -1,9 +1,15 @@
 #!/usr/bin/env bash
 # ============================================================================
-# mp2rss-cli 端到端验证脚本（阶段一）
+# mp2rss-cli 端到端验证脚本
 #
-# 覆盖 plan「端到端验证（阶段一聚焦）」6 大检查项：git identity、三种登录
-# 路径、核心命令链、错误路径、质量门、CHANGELOG 自动化。
+# 7 大检查项：
+#   1) git identity     2) 三种登录路径     3) 核心命令链
+#   4) 错误路径         5) 质量门           6) CHANGELOG 自动化
+#   7) 自更新 mock 链路（阶段二）
+#
+# 阶段二的发版/安装真实链路（release.yml / install.sh 真实跑 / npm 真实
+# postinstall）需要 GitHub Release 已发布后才能跑，由用户在部署阶段做；
+# 不在本脚本范围。静态部分参见 test/stage2-validate.sh。
 #
 # 用法：
 #   ./test/e2e.sh
@@ -195,12 +201,12 @@ file_mode() {
 }
 
 # ============================================================================
-# 6 大步骤
+# 7 大步骤
 # ============================================================================
 
 # ---- step 1：git identity ----------------------------------------
 step_1_git_identity() {
-  local id="1/6" desc="git identity 校验（必须含 areyoubugcoder）"
+  local id="1/7" desc="git identity 校验（必须含 areyoubugcoder）"
   step_header "$id" "$desc"
   local t0; t0=$(now_ms)
   local cmd="git -C $REPO_ROOT config user.email"
@@ -218,7 +224,7 @@ step_1_git_identity() {
 
 # ---- step 2：三种登录路径 ----------------------------------------
 step_2_login_flows() {
-  local id="2/6" desc="三种登录路径（-k / loopback / --no-browser）"
+  local id="2/7" desc="三种登录路径（-k / loopback / --no-browser）"
   step_header "$id" "$desc"
   local t0; t0=$(now_ms)
   local notes=()
@@ -340,7 +346,7 @@ step_2_login_flows() {
 
 # ---- step 3：核心命令链 ------------------------------------------
 step_3_core_commands() {
-  local id="3/6" desc="核心命令链（subscribe→list→search→articles→remove）"
+  local id="3/7" desc="核心命令链（subscribe→list→search→articles→remove）"
   step_header "$id" "$desc"
   local t0; t0=$(now_ms)
   local notes=()
@@ -427,7 +433,7 @@ step_3_core_commands() {
 
 # ---- step 4：错误路径 --------------------------------------------
 step_4_error_paths() {
-  local id="4/6" desc="错误路径（401 / 404 / 网络）"
+  local id="4/7" desc="错误路径（401 / 404 / 网络）"
   step_header "$id" "$desc"
   local t0; t0=$(now_ms)
   local notes=()
@@ -487,7 +493,7 @@ step_4_error_paths() {
 
 # ---- step 5：质量门 ----------------------------------------------
 step_5_quality_gates() {
-  local id="5/6" desc="质量门（make lint && make test && size ≤ 12 MiB）"
+  local id="5/7" desc="质量门（make lint && make test && size ≤ 12 MiB）"
   step_header "$id" "$desc"
   local t0; t0=$(now_ms)
   local notes=()
@@ -541,7 +547,7 @@ step_5_quality_gates() {
 #   b) 尝试调 `release-please --dry-run` 并捕获预期的鉴权错误，注明真正的
 #      dry-run 在 CI 中（有 GITHUB_TOKEN）才能完整跑
 step_6_changelog_dryrun() {
-  local id="6/6" desc="CHANGELOG 自动化（Conventional Commits 合规 + release-please 注记）"
+  local id="6/7" desc="CHANGELOG 自动化（Conventional Commits 合规 + release-please 注记）"
   step_header "$id" "$desc"
   local t0; t0=$(now_ms)
   local notes=()
@@ -584,6 +590,43 @@ step_6_changelog_dryrun() {
   record_step "$id" "$desc" \
     "git log --pretty=%s -20 | 正则匹配 Conventional Commits" \
     "全部 commit 符合 (feat|fix|docs|chore|...): 格式" \
+    "$actual" "$result" "$dur"
+  [[ "$result" == "PASS" ]] || return 1
+}
+
+# ---- step 7：自更新 mock 链路（阶段二） --------------------------
+# `mp2rss update` 的 LatestReleaseURL/DownloadBase 是 package-level Go var，
+# 编译后的二进制 runtime 无法重写。所以这里复用 mp2rss-cli-dev 在
+# cmd/update/update_test.go 写好的 httptest fixture——它本身就是完整的端到端
+# mock：fake GitHub Releases API + fake tar.gz + fake checksums.txt，覆盖
+# fetchLatestTag → download → lookupChecksum → fileSHA256 → extractTarGz
+# → atomicReplace 全链路，以及 --check / 错误路径。
+step_7_update_mock() {
+  local id="7/7" desc="自更新 mock 链路（update_test.go httptest fixture）"
+  step_header "$id" "$desc"
+  local t0; t0=$(now_ms)
+  local log="$SANDBOX_HOME/step7-update.log"
+
+  local rc
+  set +e
+  ( cd "$REPO_ROOT" && go test -count=1 -run "TestLookupChecksum|TestRunCheck|TestDoUpdate|TestSupported" ./cmd/update/... ) >"$log" 2>&1
+  rc=$?
+  set -e
+
+  local result="FAIL"
+  local actual="go test exit=${rc}"
+  if (( rc == 0 )); then
+    local cnt; cnt=$(grep -cE "PASS:" "$log" || true)
+    actual="${actual}; ${cnt} 个测试 PASS（含 TestDoUpdate_EndToEnd 完整端到端 mock）"
+    result="PASS"
+  else
+    actual="${actual}; tail: $(tail -10 "$log" | tr '\n' ' ' | head -c 200)"
+  fi
+
+  local t1; t1=$(now_ms); local dur=$((t1 - t0))
+  record_step "$id" "$desc" \
+    "go test ./cmd/update/... -run TestLookupChecksum|TestRunCheck|TestDoUpdate|TestSupported" \
+    "5 个测试 PASS（cover fetchLatest → download → checksum → extract → atomicReplace）" \
     "$actual" "$result" "$dur"
   [[ "$result" == "PASS" ]] || return 1
 }
@@ -676,6 +719,7 @@ main() {
   step_4_error_paths      || overall=1
   step_5_quality_gates    || overall=1
   step_6_changelog_dryrun || overall=1
+  step_7_update_mock      || overall=1
 
   write_report
 
