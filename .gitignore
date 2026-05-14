@@ -1,0 +1,35 @@
+# Binaries
+/dist/
+/bin/
+mp2rss
+mp2rss.exe
+*.exe
+*.test
+*.out
+
+# Build artifacts
+/build/
+*.tar.gz
+*.zip
+checksums.txt
+
+# Dependencies
+/vendor/
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Local config
+.env
+.env.local
+
+# npm wrapper artifacts
+/npm/bin/
+/npm/node_modules/
+
+# Coverage
+coverage.out
+coverage.html
