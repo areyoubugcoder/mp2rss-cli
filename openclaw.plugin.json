@@ -1,0 +1,12 @@
+{
+  "id": "mp2rss-cli",
+  "name": "mp2rss CLI",
+  "description": "Agent skills for the mp2rss CLI: subscribe / list / remove WeChat 公众号 RSS sources and fetch their historical articles via mp2rss. Bundles two skills (mp2rss-auth, mp2rss-mp); requires the mp2rss binary on PATH.",
+  "contracts": {
+    "tools": ["mp2rss"]
+  },
+  "skills": [
+    "skills/mp2rss-auth",
+    "skills/mp2rss-mp"
+  ]
+}
