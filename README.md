@@ -1,6 +1,6 @@
 # mp2rss-cli
 
-[Mp2RSS](https://mp2rss.bugcode.dev) 的命令行客户端 —— 把微信公众号转成 RSS 订阅源，命令行管理订阅、查看历史文章，输出支持表格与 JSON 两种格式，适合人类直接用，也适合 AI Agent 自动调用。
+[Mp2RSS](https://mp2rss.bugcode.dev) 的命令行客户端 —— 把微信公众号转成 RSS 订阅源，管理订阅、查看历史文章，公众号订阅功能。
 
 [![Release](https://img.shields.io/github/v/release/areyoubugcoder/mp2rss-cli?display_name=tag&sort=semver)](https://github.com/areyoubugcoder/mp2rss-cli/releases)
 [![Downloads](https://img.shields.io/github/downloads/areyoubugcoder/mp2rss-cli/total)](https://github.com/areyoubugcoder/mp2rss-cli/releases)
@@ -52,7 +52,7 @@ mp2rss mp articles <mpId>                                   # 看该公众号历
 mp2rss mp list -o json | jq '.items[].mpName'              # 结构化数据 + jq 处理
 ```
 
-> ⚠️ 订阅时传入的是公众号 **任意一篇文章的 URL**（`https://mp.weixin.qq.com/s/...`），不是公众号名字、不是二维码、也不是公众号主页链接。
+> ⚠️ 订阅时传入的是 **公众号文章的 URL**（`https://mp.weixin.qq.com/s/...`），不是公众号名字。
 
 ## 完整命令参考
 
@@ -79,10 +79,6 @@ mp2rss mp list -o json | jq '.items[].mpName'              # 结构化数据 + j
 - 所有命令默认 `-o table`，加 `-o json` 输出结构化数据（`auth login` 例外，仅文本反馈）
 - JSON 错误形态统一为 `{"error":{"message":"...","code":<int>}}`，`code` 为 HTTP 状态码或 CLI exit code
 - Exit codes：`0` 成功 / `1` 通用错误（网络）/ `2` 参数错误 / `3` 鉴权失败 / `4` 资源不存在 / `5` 上游不可用
-- 时间字段统一为 unix 毫秒数（number）；字段命名统一 camelCase（`mpId` / `mpName` / `lastLoginAt` 等）
-- `mpId` 是 int64，JS / jq 解析时注意精度
-
-完整 flag、JSON shape 与字段定义：[文档站 · 命令参考](https://areyoubugcoder.github.io/Mp2RSS/cli/commands)。
 
 ## 全局参数
 
@@ -98,14 +94,15 @@ mp2rss mp list -o json | jq '.items[].mpName'              # 结构化数据 + j
 
 ## 配置
 
-本地配置 `~/.mp2rss/config.json`（目录 `0700`、文件 `0600`）：
+本地配置 `~/.mp2rss/config.json`：
 
 ```json
 {
   "feed_key": "9f3a2c...（64 位 hex）",
   "api_url": "https://mp2rss.bugcode.dev",
   "last_login_at": 1747194198,
-  "last_verify_at": 1747194198
+  "last_verify_at": 1747194198,
+  ...
 }
 ```
 
@@ -129,7 +126,7 @@ npx skills add areyoubugcoder/mp2rss-cli -y -g
 ```
 
 ```bash
-# 3. OpenClaw / ClawHub（公开页 https://clawhub.ai/mp2rss/mp2rss-cli）
+# 3. OpenClaw🦞（https://clawhub.ai/mp2rss/mp2rss-cli）
 clawhub package install mp2rss-cli
 ```
 
@@ -140,7 +137,7 @@ clawhub package install mp2rss-cli
 - 「登录公众号 RSS 服务」/「我的 Feed Key 是什么」→ `mp2rss-auth`
 - 「订阅这个公众号 https://mp.weixin.qq.com/s/...」→ `mp2rss mp subscribe`
 - 「我订阅了哪些公众号」/「搜一下我订阅的财经类公众号」→ `mp2rss mp list / search`
-- 「这个公众号 <mpId> 最近发了什么」/「拉一下 X 这个号的文章」→ `mp2rss mp articles`
+- 「看一下 X 这个号的最新文章」→ `mp2rss mp articles`
 - 「取消订阅公众号 X」/「把 X 从订阅里删了」→ `mp2rss mp remove`
 
 所有命令支持 `-o json`，Agent 可直接解析结构化输出做后续处理。
