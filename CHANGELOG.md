@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.0.1](https://github.com/areyoubugcoder/mp2rss-cli/compare/v1.0.0...v1.0.1) (2026-05-14)
+
+
+### 🐛 修复
+
+* API endpoint base is mp2rss.bugcode.dev (no /api prefix) ([3d8d9ba](https://github.com/areyoubugcoder/mp2rss-cli/commit/3d8d9ba52ffd24fb27db872c655356a6964f59f8))
+
+
+### ♻️ 重构
+
+* switch primary domain to mp2rss.bugcode.dev ([ac4ea09](https://github.com/areyoubugcoder/mp2rss-cli/commit/ac4ea0998b33ba4df058bf898c519cd7b17d8971))
+
 ## 1.0.0 (2026-05-14)
 
 
