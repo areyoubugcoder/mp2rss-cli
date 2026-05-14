@@ -69,29 +69,26 @@ mp2rss mp list -o json | jq '.items[].mpName'
 - 命令参考：<https://areyoubugcoder.github.io/Mp2RSS/cli/commands>
 - FAQ：<https://areyoubugcoder.github.io/Mp2RSS/cli/faq>
 
-## 在 Claude Code 中使用
+## AI Agent 使用
 
-mp2rss 提供 Claude Code agent skills，让你在 Claude Code 里用自然语言调用 CLI。在 Claude Code 中：
+所有命令支持 `-o json` 输出结构化数据，AI Agent 可以直接解析：
 
-```
-/plugin marketplace add areyoubugcoder/mp2rss-cli
-/plugin install mp2rss-cli@mp2rss
-```
-
-或通过 [ClawHub](https://clawhub.ai/mp2rss/mp2rss-cli) 安装到 OpenClaw / Codex / 其他兼容 host：
-
-```
-clawhub package install mp2rss-cli
+```bash
+mp2rss mp list -o json
+mp2rss mp articles <mpId> -o json
+mp2rss mp search <keyword> -o json
+mp2rss auth status -o json
 ```
 
-之后可以直接说：
+`skills/` 目录下有 Claude Code 专用的 Skill 文件（[`mp2rss-auth`](skills/mp2rss-auth/SKILL.md)、[`mp2rss-mp`](skills/mp2rss-mp/SKILL.md)），安装后 AI Agent 可以直接用自然语言订阅公众号、查文章：
 
-- 「登录公众号 RSS 服务」
-- 「订阅这个公众号 https://mp.weixin.qq.com/s/...」
-- 「我订阅了哪些公众号」
-- 「这个公众号 <mpId> 最近发了什么」
+```bash
+npx skills add areyoubugcoder/mp2rss-cli -y -g
+```
 
-包含两个 skill：[`mp2rss-auth`](skills/mp2rss-auth/SKILL.md)（登录态管理）与 [`mp2rss-mp`](skills/mp2rss-mp/SKILL.md)（订阅与文章）。
+OpenClaw / Codex 等 ClawHub 兼容 host：`clawhub package install mp2rss-cli`
+
+安装后在 Claude Code / Cursor 里说「订阅这个公众号 https://mp.weixin.qq.com/s/...」即可直接调用。
 
 ## License
 
