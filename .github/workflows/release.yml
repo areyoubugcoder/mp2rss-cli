@@ -43,7 +43,6 @@ jobs:
           CGO_ENABLED: '0'
         run: |
           set -eu
-          version="${VERSION#v}"
           out="mp2rss"
           [ "${{ matrix.goos }}" = "windows" ] && out="mp2rss.exe"
           mkdir -p dist
