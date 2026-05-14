@@ -81,7 +81,7 @@ mp2rss mp list -o json | jq '.items[].mpName'
 | `mp2rss mp list` | 列出订阅（支持 `-q` 模糊搜索、分页） |
 | `mp2rss mp search <keyword>` | `mp list -q` 的语法糖 |
 | `mp2rss mp subscribe <article-url>` | 通过文章链接订阅公众号 |
-| `mp2rss mp remove <mpId>` | 取消订阅（`--yes` 跳过确认） |
+| `mp2rss mp remove <mpId>` | 取消订阅（`-y/--yes` 跳过确认） |
 | `mp2rss mp articles <mpId>` | 查询某公众号的历史文章 |
 | `mp2rss update` | 自更新（v1.x 启用，当前为占位实现） |
 
