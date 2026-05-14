@@ -21,39 +21,46 @@
 
 ## 安装
 
-### 本地源码构建（当前阶段唯一方式）
+四种方式，按场景任选其一。完整步骤、环境变量覆盖与卸载指引见 [文档站 · 安装](https://mp2rss.com/cli/install)。
 
-需要 Go 1.22+。
+### 一键安装脚本（推荐 macOS / Linux）
+
+```bash
+curl -fsSL https://mp2rss.com/install.sh | sh
+```
+
+支持 `INSTALL_DIR` / `VERSION` / `NO_VERIFY` 环境变量覆盖。
+
+### npm 包装（Node ≥ 18）
+
+```bash
+pnpm add -g @mp2rss/cli
+# 或：npm install -g @mp2rss/cli
+```
+
+`postinstall` 按当前平台拉对应二进制并校验 SHA-256。
+
+### 直接下载
+
+到 [最新 release](https://github.com/areyoubugcoder/mp2rss-cli/releases/latest) 按平台下载 `mp2rss-cli_<version>_<os>_<arch>.tar.gz`（Windows 是 `.zip`），用同 release 的 `checksums.txt` 校验后解压到 `PATH` 即可。
+
+### 源码构建（Go ≥ 1.21）
 
 ```bash
 git clone https://github.com/areyoubugcoder/mp2rss-cli.git
 cd mp2rss-cli
-go build -o mp2rss .
-./mp2rss --version
+make build
+sudo install -m 0755 mp2rss /usr/local/bin/mp2rss
 ```
 
-把 `mp2rss` 放到 `PATH` 中任意目录即可全局调用：
+### 升级
 
 ```bash
-sudo mv mp2rss /usr/local/bin/
+mp2rss update         # 任何安装方式通用，原子替换 + 校验
+mp2rss update --check # 只检查
 ```
 
-### v1.x 起将支持
-
-首个正式版本（v1.x）发布后将开放以下安装方式：
-
-```bash
-# Homebrew（占位，上线后可用）
-brew install areyoubugcoder/tap/mp2rss
-
-# npm 包装（占位，上线后可用）
-npm install -g @mp2rss/cli
-
-# 一键安装脚本（占位，上线后可用）
-curl -fsSL https://mp2rss.com/install.sh | sh
-```
-
-也可在 [Releases](https://github.com/areyoubugcoder/mp2rss-cli/releases) 页面按平台 / 架构直接下载二进制并校验 `checksums.txt`。
+通过 npm 安装的也可用 `pnpm up -g @mp2rss/cli` 升级；脚本安装的可重跑 install.sh。详情见 [FAQ](https://mp2rss.com/cli/faq#如何更新到最新版本)。
 
 ## 快速上手
 
@@ -83,7 +90,7 @@ mp2rss mp list -o json | jq '.items[].mpName'
 | `mp2rss mp subscribe <article-url>` | 通过文章链接订阅公众号 |
 | `mp2rss mp remove <mpId>` | 取消订阅（`-y/--yes` 跳过确认） |
 | `mp2rss mp articles <mpId>` | 查询某公众号的历史文章 |
-| `mp2rss update` | 自更新（v1.x 启用，当前为占位实现） |
+| `mp2rss update` | 自更新到最新 release（`--check` / `--force`） |
 
 完整参数、退出码、表格 / JSON 输出示例见 [文档站 · 命令参考](https://mp2rss.com/cli/commands)。
 
@@ -94,13 +101,14 @@ mp2rss mp list -o json | jq '.items[].mpName'
 - 目录权限 `0700`（仅当前用户可访问）
 - 文件权限 `0600`（仅当前用户可读写）
 
-配置字段：
+配置字段（落盘 schema 保持 snake_case + 秒级 Unix 时间戳）：
 
 ```json
 {
   "feed_key": "9f3a2c...（64 位 hex）",
   "api_url": "https://api.mp2rss.com",
-  "last_call_at": "2026-05-14T03:23:18Z"
+  "last_login_at": 1747194198,
+  "last_verify_at": 1747194198
 }
 ```
 
