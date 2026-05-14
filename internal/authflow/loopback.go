@@ -52,10 +52,10 @@ type CallbackResult struct {
 
 // Flow is a single-shot loopback server.
 type Flow struct {
-	State          string        // 32-byte hex CSRF nonce
-	Port           int           // TCP port we bound to
-	WebOrigin      string        // e.g. https://mp2rss.bugcode.dev
-	Timeout        time.Duration // override DefaultTimeout for tests
+	State     string        // 32-byte hex CSRF nonce
+	Port      int           // TCP port we bound to
+	WebOrigin string        // e.g. https://mp2rss.bugcode.dev
+	Timeout   time.Duration // override DefaultTimeout for tests
 
 	listener net.Listener
 	server   *http.Server

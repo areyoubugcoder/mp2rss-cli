@@ -16,9 +16,9 @@ func TestTruncate_CJKAware(t *testing.T) {
 		want string
 	}{
 		{"abcdefgh", 5, "abcd…"},
-		{"中文测试", 4, "中…"},        // 中 is 2 cols → 2 + 1 ellipsis = 3 ≤ 4-1=3 wait
-		{"短", 10, "短"},            // fits, no truncation
-		{"hello", 5, "hello"},      // exactly fits
+		{"中文测试", 4, "中…"},     // 中 is 2 cols → 2 + 1 ellipsis = 3 ≤ 4-1=3 wait
+		{"短", 10, "短"},        // fits, no truncation
+		{"hello", 5, "hello"}, // exactly fits
 		{"", 5, ""},
 	}
 	for _, c := range cases {

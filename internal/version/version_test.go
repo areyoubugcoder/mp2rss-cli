@@ -14,7 +14,7 @@ func TestCompare(t *testing.T) {
 		{"v2.0.0", "v1.9.9", 1},
 		{"v1.0", "v1.0.0", 0}, // zero-padding
 		{"v1.0", "v1.0.1", -1},
-		{"v1.2.3", "v1.2.3-rc1", 1},  // pre-release loses to release
+		{"v1.2.3", "v1.2.3-rc1", 1}, // pre-release loses to release
 		{"v1.2.3-rc1", "v1.2.3-rc2", -1},
 		{"v1.0.0+abc", "v1.0.0+def", 0}, // build metadata ignored
 		{"dev", "v0.0.1", -1},
