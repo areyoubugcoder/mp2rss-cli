@@ -146,4 +146,17 @@ jobs:
       - name: Publish
         working-directory: npm
         run: |
-          npm publish --access public --provenance
+          set -eu
+          # pre-release tag (vX.Y.Z-foo) publishes to a derived dist-tag
+          # instead of latest，避免 RC/beta 抢正式版的 `latest`。
+          #   v1.0.0-rc.0   → npm publish --tag rc
+          #   v1.0.0-beta.1 → npm publish --tag beta
+          #   v1.0.0        → npm publish        (默认 latest)
+          if [[ "${VERSION}" == *-* ]]; then
+            suffix="${VERSION#*-}"
+            tag="${suffix%%.*}"
+            echo "Publishing pre-release to dist-tag: ${tag}"
+            npm publish --access public --provenance --tag "${tag}"
+          else
+            npm publish --access public --provenance
+          fi
