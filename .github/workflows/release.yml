@@ -1,0 +1,149 @@
+name: release
+
+# Triggered by release-please when a release PR is merged and a GitHub Release
+# is published. Cross-compiles 6 binaries, attaches checksums, then publishes
+# the @mp2rss/cli npm package wrapper.
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+  id-token: write # for npm provenance
+
+jobs:
+  build:
+    name: build ${{ matrix.goos }}/${{ matrix.goarch }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { goos: darwin,  goarch: amd64, ext: tar.gz }
+          - { goos: darwin,  goarch: arm64, ext: tar.gz }
+          - { goos: linux,   goarch: amd64, ext: tar.gz }
+          - { goos: linux,   goarch: arm64, ext: tar.gz }
+          - { goos: windows, goarch: amd64, ext: zip }
+          - { goos: windows, goarch: arm64, ext: zip }
+    env:
+      VERSION: ${{ github.event.release.tag_name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache: true
+
+      - name: Build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: '0'
+        run: |
+          set -eu
+          version="${VERSION#v}"
+          out="mp2rss"
+          [ "${{ matrix.goos }}" = "windows" ] && out="mp2rss.exe"
+          mkdir -p dist
+          go build \
+            -trimpath \
+            -ldflags="-s -w -X github.com/areyoubugcoder/mp2rss-cli/internal/version.Version=${VERSION}" \
+            -o "dist/${out}" \
+            .
+
+      - name: Package archive
+        id: pkg
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          set -eu
+          version="${VERSION#v}"
+          asset="mp2rss-cli_${version}_${GOOS}_${GOARCH}.${{ matrix.ext }}"
+          (
+            cd dist
+            if [ "${{ matrix.ext }}" = "zip" ]; then
+              zip "../${asset}" mp2rss.exe
+            else
+              tar -czf "../${asset}" mp2rss
+            fi
+          )
+          ls -lh "${asset}"
+          echo "asset=${asset}" >>"$GITHUB_OUTPUT"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: archive-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: ${{ steps.pkg.outputs.asset }}
+          retention-days: 1
+
+  release-assets:
+    name: publish release assets
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ github.event.release.tag_name }}
+    steps:
+      - name: Download all archives
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Generate checksums.txt
+        working-directory: dist
+        run: |
+          set -eu
+          sha256sum mp2rss-cli_*.tar.gz mp2rss-cli_*.zip > checksums.txt
+          cat checksums.txt
+
+      - name: Attach to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.VERSION }}
+          files: |
+            dist/mp2rss-cli_*.tar.gz
+            dist/mp2rss-cli_*.zip
+            dist/checksums.txt
+          fail_on_unmatched_files: true
+
+  publish-npm:
+    name: publish @mp2rss/cli to npm
+    needs: release-assets
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ github.event.release.tag_name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Sync npm/package.json version
+        working-directory: npm
+        run: |
+          set -eu
+          version="${VERSION#v}"
+          node -e "
+            const fs = require('fs');
+            const p = require('./package.json');
+            p.version = '${version}';
+            fs.writeFileSync('package.json', JSON.stringify(p, null, 2) + '\n');
+          "
+          cat package.json | head -10
+
+      - name: Publish
+        working-directory: npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          pnpm publish --access public --no-git-checks --provenance
