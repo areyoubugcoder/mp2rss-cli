@@ -11,7 +11,7 @@ import (
 
 type subscribeResult struct {
 	OK         bool   `json:"ok"`
-	ArticleURL string `json:"article_url"`
+	ArticleURL string `json:"articleUrl"`
 }
 
 func newSubscribeCmd(deps *cliopts.Deps) *cobra.Command {

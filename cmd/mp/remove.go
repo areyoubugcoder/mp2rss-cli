@@ -13,7 +13,7 @@ import (
 
 type removeResult struct {
 	OK   bool  `json:"ok"`
-	MpID int64 `json:"mp_id"`
+	MpID int64 `json:"mpId"`
 }
 
 func newRemoveCmd(deps *cliopts.Deps) *cobra.Command {

@@ -12,12 +12,17 @@ import (
 )
 
 // statusDTO is the JSON shape for `auth status`.
+//
+// Field names are camelCase to align with the Open API DTOs; timestamps are
+// emitted as unix-millis numbers (0 when absent) so jq users can `from_unixtime`
+// without first reparsing a locale-formatted string.
 type statusDTO struct {
-	LoggedIn        bool   `json:"logged_in"`
-	Source          string `json:"source"`             // "env" | "config" | "none"
-	APIURL          string `json:"api_url"`
-	FeedKeyMasked   string `json:"feed_key_masked,omitempty"`
-	LastVerifyAtISO string `json:"last_verify_at,omitempty"`
+	LoggedIn      bool   `json:"loggedIn"`
+	Source        string `json:"source"` // "env" | "config" | "none"
+	APIURL        string `json:"apiUrl"`
+	FeedKeyMasked string `json:"feedKeyMasked,omitempty"`
+	LastLoginAt   int64  `json:"lastLoginAt,omitempty"`  // unix millis
+	LastVerifyAt  int64  `json:"lastVerifyAt,omitempty"` // unix millis
 }
 
 func newStatusCmd(deps *cliopts.Deps) *cobra.Command {
@@ -41,8 +46,12 @@ func newStatusCmd(deps *cliopts.Deps) *cobra.Command {
 			default:
 				dto.Source = "none"
 			}
+			// config 里存的是 unix 秒，公开 JSON 一律转毫秒以对齐 API DTO。
+			if cfg.LastLoginAt > 0 {
+				dto.LastLoginAt = cfg.LastLoginAt * 1000
+			}
 			if cfg.LastVerifyAt > 0 {
-				dto.LastVerifyAtISO = time.Unix(cfg.LastVerifyAt, 0).Local().Format(output.TimeFormat)
+				dto.LastVerifyAt = cfg.LastVerifyAt * 1000
 			}
 
 			if deps.Output() == output.FormatJSON {
@@ -59,8 +68,9 @@ func newStatusCmd(deps *cliopts.Deps) *cobra.Command {
 			fmt.Fprintf(w, "状态：已登录（来源：%s）\n", dto.Source)
 			fmt.Fprintf(w, "API：%s\n", dto.APIURL)
 			fmt.Fprintf(w, "Feed Key：%s\n", dto.FeedKeyMasked)
-			if dto.LastVerifyAtISO != "" {
-				fmt.Fprintf(w, "上次校验：%s\n", dto.LastVerifyAtISO)
+			if cfg.LastVerifyAt > 0 {
+				fmt.Fprintf(w, "上次校验：%s\n",
+					time.Unix(cfg.LastVerifyAt, 0).Local().Format(output.TimeFormat))
 			}
 			return nil
 		},
