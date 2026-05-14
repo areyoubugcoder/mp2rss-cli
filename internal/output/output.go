@@ -105,8 +105,15 @@ func writeDivider(w io.Writer, widths []int) {
 	_, _ = io.WriteString(w, sb.String())
 }
 
+// ellipsis is the truncation marker. We use "…" but the width may be 1 or 2
+// depending on the user's locale (go-runewidth treats it as ambiguous).
+const ellipsis = '…'
+
 // Truncate trims s so its runewidth is at most max, appending "…" if truncated.
 // Returns s as-is if already short enough or if max < 1.
+//
+// When max is too small to even fit the ellipsis, the function falls back to
+// ASCII "." or "" so the cell never exceeds max columns.
 func Truncate(s string, max int) string {
 	if max <= 0 {
 		return ""
@@ -114,10 +121,16 @@ func Truncate(s string, max int) string {
 	if runewidth.StringWidth(s) <= max {
 		return s
 	}
-	// Reserve one column for the ellipsis.
-	target := max - 1
+	ellipsisW := runewidth.RuneWidth(ellipsis)
+	mark := string(ellipsis)
+	// Locale may make "…" 2-wide; fall back to ASCII "." if max is tight.
+	if ellipsisW > max {
+		mark = "."
+		ellipsisW = 1
+	}
+	target := max - ellipsisW
 	if target < 0 {
-		target = 0
+		return mark[:max]
 	}
 	w := 0
 	var b strings.Builder
@@ -129,7 +142,7 @@ func Truncate(s string, max int) string {
 		b.WriteRune(r)
 		w += rw
 	}
-	b.WriteRune('…')
+	b.WriteString(mark)
 	return b.String()
 }
 
