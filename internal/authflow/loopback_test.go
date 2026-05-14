@@ -11,7 +11,7 @@ import (
 )
 
 func TestNewBindsValidPort(t *testing.T) {
-	f, err := New("https://mp2rss.com")
+	f, err := New("https://mp2rss.bugcode.dev")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -26,14 +26,14 @@ func TestNewBindsValidPort(t *testing.T) {
 }
 
 func TestAuthorizeURL_Composition(t *testing.T) {
-	f, err := New("https://mp2rss.com")
+	f, err := New("https://mp2rss.bugcode.dev")
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer f.Close()
 
 	url := f.AuthorizeURL("0.1.0")
-	if !strings.HasPrefix(url, "https://mp2rss.com/cli/authorize?") {
+	if !strings.HasPrefix(url, "https://mp2rss.bugcode.dev/cli/authorize?") {
 		t.Errorf("bad prefix: %s", url)
 	}
 	if !strings.Contains(url, "state="+f.State) {

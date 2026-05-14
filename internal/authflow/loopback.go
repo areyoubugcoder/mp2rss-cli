@@ -36,10 +36,10 @@ const DefaultTimeout = 120 * time.Second
 // AllowedOrigins are the only Origin headers we'll accept.
 //
 // Web 端 vite dev 默认起在 :3000（apps/web vite.config 已固定），生产是
-// https://mp2rss.com。同一台机器同时通过 IPv4 / IPv6 解析 localhost 时
+// https://mp2rss.bugcode.dev。同一台机器同时通过 IPv4 / IPv6 解析 localhost 时
 // 浏览器可能发出 http://[::1]:3000，所以两条都列上。
 var AllowedOrigins = []string{
-	"https://mp2rss.com",
+	"https://mp2rss.bugcode.dev",
 	"http://localhost:3000",
 	"http://[::1]:3000",
 }
@@ -54,7 +54,7 @@ type CallbackResult struct {
 type Flow struct {
 	State          string        // 32-byte hex CSRF nonce
 	Port           int           // TCP port we bound to
-	WebOrigin      string        // e.g. https://mp2rss.com
+	WebOrigin      string        // e.g. https://mp2rss.bugcode.dev
 	Timeout        time.Duration // override DefaultTimeout for tests
 
 	listener net.Listener

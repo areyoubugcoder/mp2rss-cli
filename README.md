@@ -1,6 +1,6 @@
 # mp2rss-cli
 
-`mp2rss` 是 [Mp2RSS](https://mp2rss.com) 官方命令行工具——在终端里完成订阅、查询、管理微信公众号的全部操作，无需打开浏览器控制台。
+[Mp2RSS](https://mp2rss.bugcode.dev) 的命令行客户端，订阅微信公众号、查看文章、管理订阅。
 
 [![Release](https://img.shields.io/github/v/release/areyoubugcoder/mp2rss-cli?display_name=tag&sort=semver)](https://github.com/areyoubugcoder/mp2rss-cli/releases)
 [![Downloads](https://img.shields.io/github/downloads/areyoubugcoder/mp2rss-cli/total)](https://github.com/areyoubugcoder/mp2rss-cli/releases)
@@ -10,73 +10,29 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/areyoubugcoder/mp2rss-cli)](https://goreportcard.com/report/github.com/areyoubugcoder/mp2rss-cli)
 
-## 特性亮点
-
-- **单文件零依赖**：Go 编译产物，体积约 10 MB，跨平台开箱即用。
-- **浏览器授权登录**：默认走 OAuth Loopback 流（类似 `gh auth login` / `gcloud`），无需手动复制 Feed 密钥。
-- **CI / 无头友好**：支持 `--feed-key` 直接落盘与 `--no-browser` 远程登录。
-- **双输出模式**：所有命令同时支持 `table`（CJK 宽度感知）与 `json`（jq 友好），错误也走 stdout。
-- **完整覆盖订阅 API**：列表 / 搜索 / 订阅 / 取消 / 历史文章一站到位。
-- **安全默认**：loopback 仅监听 `127.0.0.1`、state 防 CSRF、Feed 密钥永不明文回显，配置文件 `0600`。
-
 ## 安装
 
-四种方式，按场景任选其一。完整步骤、环境变量覆盖与卸载指引见 [文档站 · 安装](https://mp2rss.com/cli/install)。
-
-### 一键安装脚本（推荐 macOS / Linux）
-
 ```bash
-curl -fsSL https://mp2rss.com/install.sh | sh
-```
+# 一键安装脚本（macOS / Linux）
+curl -fsSL https://mp2rss.bugcode.dev/install.sh | sh
 
-支持 `INSTALL_DIR` / `VERSION` / `NO_VERIFY` 环境变量覆盖。
-
-### npm 包装（Node ≥ 18）
-
-```bash
+# npm（Node ≥ 18）
 pnpm add -g @mp2rss/cli
-# 或：npm install -g @mp2rss/cli
+
+# 源码（Go ≥ 1.21）
+git clone https://github.com/areyoubugcoder/mp2rss-cli.git && cd mp2rss-cli && make build
 ```
 
-`postinstall` 按当前平台拉对应二进制并校验 SHA-256。
+也可在 [Releases](https://github.com/areyoubugcoder/mp2rss-cli/releases/latest) 直接下载对应平台二进制。完整安装与卸载说明见 [文档站 · 安装](https://mp2rss.bugcode.dev/cli/install)。
 
-### 直接下载
-
-到 [最新 release](https://github.com/areyoubugcoder/mp2rss-cli/releases/latest) 按平台下载 `mp2rss-cli_<version>_<os>_<arch>.tar.gz`（Windows 是 `.zip`），用同 release 的 `checksums.txt` 校验后解压到 `PATH` 即可。
-
-### 源码构建（Go ≥ 1.21）
+## 用法
 
 ```bash
-git clone https://github.com/areyoubugcoder/mp2rss-cli.git
-cd mp2rss-cli
-make build
-sudo install -m 0755 mp2rss /usr/local/bin/mp2rss
-```
-
-### 升级
-
-```bash
-mp2rss update         # 任何安装方式通用，原子替换 + 校验
-mp2rss update --check # 只检查
-```
-
-通过 npm 安装的也可用 `pnpm up -g @mp2rss/cli` 升级；脚本安装的可重跑 install.sh。详情见 [FAQ](https://mp2rss.com/cli/faq#如何更新到最新版本)。
-
-## 快速上手
-
-```bash
-# 1. 登录（浏览器会自动打开 Mp2RSS 授权页）
 mp2rss auth login
-
-# 2. 用任意一篇该公众号的文章链接发起订阅
 mp2rss mp subscribe https://mp.weixin.qq.com/s/xxxxxxxxxx
-
-# 3. 查看当前账户下的订阅
 mp2rss mp list
 mp2rss mp list -o json | jq '.items[].mpName'
 ```
-
-更多登录方式（`-k/--feed-key` 直接落盘、`--no-browser` 远程登录）见 [文档站 · 登录](https://mp2rss.com/cli/login)。
 
 ## 命令一览
 
@@ -84,64 +40,39 @@ mp2rss mp list -o json | jq '.items[].mpName'
 | ---- | ---- |
 | `mp2rss auth login` | 登录（默认浏览器 + loopback；支持 `-k` / `--no-browser`） |
 | `mp2rss auth logout` | 清空本地 Feed 密钥 |
-| `mp2rss auth status` | 查看登录状态与 API 地址 |
-| `mp2rss mp list` | 列出订阅（支持 `-q` 模糊搜索、分页） |
+| `mp2rss auth status` | 查看登录状态 |
+| `mp2rss mp list` | 列出订阅（`-q` 模糊搜索） |
 | `mp2rss mp search <keyword>` | `mp list -q` 的语法糖 |
-| `mp2rss mp subscribe <article-url>` | 通过文章链接订阅公众号 |
-| `mp2rss mp remove <mpId>` | 取消订阅（`-y/--yes` 跳过确认） |
-| `mp2rss mp articles <mpId>` | 查询某公众号的历史文章 |
-| `mp2rss update` | 自更新到最新 release（`--check` / `--force`） |
+| `mp2rss mp subscribe <article-url>` | 订阅公众号 |
+| `mp2rss mp remove <mpId>` | 取消订阅（`-y` 跳过确认） |
+| `mp2rss mp articles <mpId>` | 历史文章 |
+| `mp2rss update` | 自更新（`--check` / `--force`） |
 
-完整参数、退出码、表格 / JSON 输出示例见 [文档站 · 命令参考](https://mp2rss.com/cli/commands)。
+完整命令参考见 [文档站 · 命令参考](https://mp2rss.bugcode.dev/cli/commands)。
 
-## 配置与环境变量
+## 配置
 
-`mp2rss` 的本地配置位于 `~/.mp2rss/config.json`，写入时自动设置：
-
-- 目录权限 `0700`（仅当前用户可访问）
-- 文件权限 `0600`（仅当前用户可读写）
-
-配置字段（落盘 schema 保持 snake_case + 秒级 Unix 时间戳）：
+本地配置 `~/.mp2rss/config.json`（目录 `0700`、文件 `0600`）：
 
 ```json
 {
   "feed_key": "9f3a2c...（64 位 hex）",
-  "api_url": "https://api.mp2rss.com",
+  "api_url": "https://mp2rss.bugcode.dev/api",
   "last_login_at": 1747194198,
   "last_verify_at": 1747194198
 }
 ```
 
-环境变量：
-
-| 变量 | 作用 | 优先级 |
-| ---- | ---- | ------ |
-| `MP2RSS_FEED_KEY` | 覆盖 Feed 密钥 | 高于配置文件、低于 `--api-key` |
-| `MP2RSS_API_URL` | 覆盖 API 地址 | 高于配置文件、低于 `--api-url` |
+环境变量 `MP2RSS_FEED_KEY` / `MP2RSS_API_URL`，优先级高于配置文件、低于命令行 flag。
 
 ## 文档
 
-- 简介与场景：<https://mp2rss.com/cli/>
-- 安装：<https://mp2rss.com/cli/install>
-- 登录（三条路径与安全要点）：<https://mp2rss.com/cli/login>
-- 命令参考：<https://mp2rss.com/cli/commands>
-- FAQ：<https://mp2rss.com/cli/faq>
-- API 参考：<https://mp2rss.com/api/>
-
-## Contributing
-
-欢迎 issue 与 PR。提交规范遵循 [Conventional Commits](https://www.conventionalcommits.org/zh-hans/v1.0.0/)：
-
-- `feat:` 新功能
-- `fix:` 修复
-- `docs:` 文档
-- `refactor:` 重构
-- `build:` 构建 / 依赖
-- `chore:` 其它杂项
-
-仓库由 [release-please](https://github.com/googleapis/release-please) 自动聚合 commit 生成 CHANGELOG 与版本 PR，请确保 commit 消息符合规范。
-
-详细开发流程见仓库 `.github/pull_request_template.md` 与 `CHANGELOG.md` 的维护说明。
+- 简介：<https://mp2rss.bugcode.dev/cli/>
+- 安装：<https://mp2rss.bugcode.dev/cli/install>
+- 登录：<https://mp2rss.bugcode.dev/cli/login>
+- 命令参考：<https://mp2rss.bugcode.dev/cli/commands>
+- FAQ：<https://mp2rss.bugcode.dev/cli/faq>
+- API 参考：<https://mp2rss.bugcode.dev/api/>
 
 ## License
 

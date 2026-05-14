@@ -19,7 +19,7 @@ import (
 
 // defaultWebOrigin hosts the /cli/authorize page. Overridable via --web-origin
 // (hidden flag) for local development.
-const defaultWebOrigin = "https://mp2rss.com"
+const defaultWebOrigin = "https://mp2rss.bugcode.dev"
 
 func newLoginCmd(deps *cliopts.Deps) *cobra.Command {
 	_ = deps

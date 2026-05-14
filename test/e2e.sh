@@ -286,7 +286,7 @@ step_2_login_flows() {
       # 模拟前端：Origin 必须在 authflow.AllowedOrigins 内
       local cb_http
       cb_http=$(curl -s -o "$SANDBOX_HOME/cb.html" -w "%{http_code}" -X POST \
-        -H "Origin: https://mp2rss.com" \
+        -H "Origin: https://mp2rss.bugcode.dev" \
         -H "Content-Type: application/json" \
         --data "{\"feed_key\":\"$FEED_KEY\",\"state\":\"$state\"}" \
         "http://127.0.0.1:$port/cli/callback" || echo "000")

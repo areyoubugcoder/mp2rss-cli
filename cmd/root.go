@@ -28,7 +28,7 @@ func newRootCmd() *cobra.Command {
 	root := &cobra.Command{
 		Use:   "mp2rss",
 		Short: "mp2rss CLI — 微信公众号 RSS 订阅管理",
-		Long: `mp2rss CLI 是 mp2rss.com 的命令行客户端。
+		Long: `mp2rss CLI 是 mp2rss.bugcode.dev 的命令行客户端。
 登录后可订阅公众号、查询文章、管理订阅列表，输出支持表格与 JSON 两种格式。
 
 支持环境变量：
@@ -45,7 +45,7 @@ func newRootCmd() *cobra.Command {
 
 	root.PersistentFlags().StringVarP(&flagOutput, "output", "o", output.FormatTable, "输出格式：table 或 json")
 	root.PersistentFlags().StringVar(&flagAPIKey, "api-key", "", "覆盖 Feed Key（也可使用 MP2RSS_FEED_KEY 环境变量）")
-	root.PersistentFlags().StringVar(&flagAPIURL, "api-url", "", "覆盖 API 地址（默认 https://api.mp2rss.com）")
+	root.PersistentFlags().StringVar(&flagAPIURL, "api-url", "", "覆盖 API 地址（默认 https://mp2rss.bugcode.dev/api）")
 
 	deps := &cliopts.Deps{
 		Output: func() string { return flagOutput },
