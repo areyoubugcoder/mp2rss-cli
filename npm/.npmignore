@@ -1,0 +1,10 @@
+.DS_Store
+.npmrc
+*.log
+*.bak
+*.tmp
+node_modules/
+.idea/
+.vscode/
+__tests__/
+*.test.js

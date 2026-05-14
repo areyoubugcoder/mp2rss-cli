@@ -1,0 +1,46 @@
+{
+  "name": "@mp2rss/cli",
+  "version": "0.0.0",
+  "description": "mp2rss CLI — 微信公众号 RSS 订阅与文章管理命令行工具",
+  "keywords": [
+    "mp2rss",
+    "cli",
+    "rss",
+    "wechat",
+    "mp",
+    "subscription"
+  ],
+  "homepage": "https://github.com/areyoubugcoder/mp2rss-cli#readme",
+  "bugs": {
+    "url": "https://github.com/areyoubugcoder/mp2rss-cli/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/areyoubugcoder/mp2rss-cli.git"
+  },
+  "license": "MIT",
+  "author": "areyoubugcoder",
+  "bin": {
+    "mp2rss": "bin/mp2rss.js"
+  },
+  "scripts": {
+    "postinstall": "node postinstall.cjs"
+  },
+  "files": [
+    "bin/",
+    "postinstall.cjs",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ]
+}
