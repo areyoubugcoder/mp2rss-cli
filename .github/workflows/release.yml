@@ -10,7 +10,7 @@ on:
 
 permissions:
   contents: write
-  id-token: write # for npm provenance
+  id-token: write # for npm provenance / OIDC trusted publishing
 
 jobs:
   build:
@@ -29,10 +29,10 @@ jobs:
     env:
       VERSION: ${{ github.ref_name }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: '1.21'
           cache: true
@@ -73,7 +73,7 @@ jobs:
           echo "asset=${asset}" >>"$GITHUB_OUTPUT"
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: archive-${{ matrix.goos }}-${{ matrix.goarch }}
           path: ${{ steps.pkg.outputs.asset }}
@@ -87,7 +87,7 @@ jobs:
       VERSION: ${{ github.ref_name }}
     steps:
       - name: Download all archives
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: dist
           merge-multiple: true
@@ -100,7 +100,7 @@ jobs:
           cat checksums.txt
 
       - name: Create release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ env.VERSION }}
           name: ${{ env.VERSION }}
@@ -118,12 +118,18 @@ jobs:
     env:
       VERSION: ${{ github.ref_name }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
-          node-version: '24'
+          node-version: '22'
           registry-url: 'https://registry.npmjs.org'
+
+      - name: Upgrade npm to support OIDC trusted publishing
+        # 固定 11.5.1：这是 npm OIDC trusted publishing 要求的最低版本，
+        # 同时绕过 npm@latest 自更新触发的 'Cannot find module promise-retry'
+        # 已知 bug（影响 Node 22.x 自带 npm@10.x → 11.x latest 自更新路径）。
+        run: npm install -g npm@11.5.1
 
       - name: Sync npm/package.json version
         working-directory: npm
