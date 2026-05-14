@@ -34,6 +34,6 @@
 ## 后续验收（用户在部署阶段做，不在本脚本范围）
 
 - 通过 release-please 合并版本 PR 后，push tag 触发 release.yml；GitHub Release 应携带 6 个平台二进制 + checksums.txt。
-- 在 macOS / Linux 主机用 `curl -fsSL https://mp2rss.bugcode.dev/install.sh | sh` 跑一次真实安装。
+- 在 macOS / Linux 主机用 `curl -fsSL https://raw.githubusercontent.com/areyoubugcoder/mp2rss-cli/main/scripts/install.sh | sh` 跑一次真实安装。
 - 在 Linux / Windows 主机用 `npm install -g @mp2rss/cli` 跑一次 postinstall。
 - 装好后 `mp2rss update` 验证自更新。

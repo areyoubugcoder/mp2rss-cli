@@ -14,7 +14,7 @@
 
 ```bash
 # 一键安装脚本（macOS / Linux）
-curl -fsSL https://mp2rss.bugcode.dev/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/areyoubugcoder/mp2rss-cli/main/scripts/install.sh | sh
 
 # npm（Node ≥ 18）
 pnpm add -g @mp2rss/cli
