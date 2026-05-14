@@ -1,11 +1,12 @@
 name: release
 
-# Triggered by release-please when a release PR is merged and a GitHub Release
-# is published. Cross-compiles 6 binaries, attaches checksums, then publishes
-# the @mp2rss/cli npm package wrapper.
+# 开发者推送 `v*` tag 时触发：交叉编译 6 个平台二进制 →
+# 生成 checksums.txt → 创建 GitHub Release（release notes 由 GitHub
+# 按上一个 tag 的提交自动生成）→ 发布 @mp2rss/cli npm 包装。
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - 'v*'
 
 permissions:
   contents: write
@@ -26,7 +27,7 @@ jobs:
           - { goos: windows, goarch: amd64, ext: zip }
           - { goos: windows, goarch: arm64, ext: zip }
     env:
-      VERSION: ${{ github.event.release.tag_name }}
+      VERSION: ${{ github.ref_name }}
     steps:
       - uses: actions/checkout@v4
 
@@ -59,8 +60,7 @@ jobs:
           GOARCH: ${{ matrix.goarch }}
         run: |
           set -eu
-          version="${VERSION#v}"
-          asset="mp2rss-cli_${version}_${GOOS}_${GOARCH}.${{ matrix.ext }}"
+          asset="mp2rss-cli_${VERSION#v}_${GOOS}_${GOARCH}.${{ matrix.ext }}"
           (
             cd dist
             if [ "${{ matrix.ext }}" = "zip" ]; then
@@ -79,12 +79,12 @@ jobs:
           path: ${{ steps.pkg.outputs.asset }}
           retention-days: 1
 
-  release-assets:
-    name: publish release assets
+  release:
+    name: publish release
     needs: build
     runs-on: ubuntu-latest
     env:
-      VERSION: ${{ github.event.release.tag_name }}
+      VERSION: ${{ github.ref_name }}
     steps:
       - name: Download all archives
         uses: actions/download-artifact@v4
@@ -99,10 +99,12 @@ jobs:
           sha256sum mp2rss-cli_*.tar.gz mp2rss-cli_*.zip > checksums.txt
           cat checksums.txt
 
-      - name: Attach to GitHub Release
+      - name: Create release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.VERSION }}
+          name: ${{ env.VERSION }}
+          generate_release_notes: true
           files: |
             dist/mp2rss-cli_*.tar.gz
             dist/mp2rss-cli_*.zip
@@ -111,10 +113,10 @@ jobs:
 
   publish-npm:
     name: publish @mp2rss/cli to npm
-    needs: release-assets
+    needs: release
     runs-on: ubuntu-latest
     env:
-      VERSION: ${{ github.event.release.tag_name }}
+      VERSION: ${{ github.ref_name }}
     steps:
       - uses: actions/checkout@v4
 
@@ -138,7 +140,6 @@ jobs:
             p.version = '${version}';
             fs.writeFileSync('package.json', JSON.stringify(p, null, 2) + '\n');
           "
-          cat package.json | head -10
 
       - name: Publish
         working-directory: npm

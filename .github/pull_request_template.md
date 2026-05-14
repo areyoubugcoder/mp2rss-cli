@@ -1,6 +1,6 @@
 <!--
-请确保 commit 信息遵循 Conventional Commits（feat: / fix: / docs: / refactor: / build: / ci: / test: / chore:），
-否则 release-please 无法自动生成 CHANGELOG 条目。
+请用 Conventional Commits 风格的提交信息（feat: / fix: / docs: / refactor: / build: / ci: / test: / chore:），
+方便发版时 GitHub 自动生成 release notes。
 -->
 
 ## 改动概述

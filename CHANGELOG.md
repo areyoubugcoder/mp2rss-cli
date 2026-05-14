@@ -46,10 +46,8 @@
 * **stage2:** static validation for release workflow / install.sh / npm / update ([8c4fb94](https://github.com/areyoubugcoder/mp2rss-cli/commit/8c4fb94e7e763981c051b1f21749dc8f6c4f61bf))
 * wire up e2e steps against real CLI ([12f05d6](https://github.com/areyoubugcoder/mp2rss-cli/commit/12f05d6d655679d808c93ea4d4f89a0121dbfebd))
 
-## Changelog
-
-本项目的所有显著变更都会记录在此文件中，由 [release-please](https://github.com/googleapis/release-please) 按 [Conventional Commits](https://www.conventionalcommits.org/) 自动维护。
-
-版本号遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
-
-<!-- release-please will append entries below this line. -->
+<!--
+本项目历史变更见上方版本条目。v1.0.0 由早期 release-please 工具自动生成；
+后续版本改为 push `v*` tag 时由 GitHub 自动生成 release notes，不再写入此文件。
+版本号遵循 Semantic Versioning。
+-->
