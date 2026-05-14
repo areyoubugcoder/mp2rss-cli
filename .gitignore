@@ -27,7 +27,6 @@ checksums.txt
 .env.local
 
 # npm wrapper artifacts
-/npm/bin/
 /npm/node_modules/
 
 # Coverage
