@@ -1,32 +1,35 @@
 # mp2rss-cli 端到端验证报告
 
-- 运行时间：2026-05-14 11:42:27 CST
+- 运行时间：2026-05-14 12:04:07 CST
 - 仓库：`/Users/han/coding-agent-workspace/mp2rss-cli`
-- API：`http://127.0.0.1:56381`（mock，pid=77017）
-- 沙箱 HOME：`/var/folders/9v/5lhxqph10r97klzqs3ftd4280000gn/T/mp2rss-cli-e2e-XXXXXX.t5UYFLihsK`
+- HEAD：`c41880d refactor(output): unify JSON keys to camelCase and timestamps to unix ms`
+- API：`http://127.0.0.1:60056`（mock-api 自启 pid=44592）
+- 沙箱 HOME：`/var/folders/9v/5lhxqph10r97klzqs3ftd4280000gn/T/mp2rss-cli-e2e-XXXXXX.Ous8un3z7F`
+- 二进制体积：8495714 bytes（上限 12582912 bytes / 12 MiB）
 
 ## 汇总
 
 | 指标 | 值 |
 |---|---|
 | 总步骤 | 6 |
-| PASS | 1 |
+| PASS | 6 |
 | FAIL | 0 |
-| SKIP | 5 |
-| 总耗时 | 72 ms |
+| SKIP | 0 |
+| 总耗时 | 6352 ms |
 
 ## 步骤明细
 
 | # | 描述 | 命令 | 预期 | 实际 | 结果 | 耗时(ms) |
 |---|---|---|---|---|---|---|
-| 1/6 | git identity 校验（必须含 areyoubugcoder） | `git -C /Users/han/coding-agent-workspace/mp2rss-cli config user.email` | 包含子串 areyoubugcoder | 241083775+areyoubugcoder@users.noreply.github.com | **PASS** | 16 |
-| 2/6 | 三种登录路径（-k / loopback / --no-browser） | `(TODO: 三个登录子路径)` | 2a 写盘 0600；2b loopback callback 命中；2c 备用通道落盘 | skeleton: CLI 命令尚未接入 | **SKIP** | 8 |
-| 3/6 | 核心命令链路（subscribe→list→search→articles→remove） | `(TODO: subscribe/list/search/articles/remove 五连)` | 每步退出码 0；JSON 关键字段断言通过 | skeleton: CLI 命令尚未接入 | **SKIP** | 10 |
-| 4/6 | 错误路径（错 key / 未订阅 mpId / 断网） | `(TODO: 错 key / 未订阅 / 断网 三组)` | 退出码分别为 3 / 4 / 5（或 1）；不 panic | skeleton: CLI 命令尚未接入 | **SKIP** | 20 |
-| 5/6 | 质量门（make lint && make test && build size ≤ 12MiB） | `make lint && make test && make build (TODO)` | lint=0 && test=0 && binary size ≤ 12582912 bytes | skeleton: Makefile 尚未接入（依赖 #4） | **SKIP** | 9 |
-| 6/6 | CHANGELOG 自动化 dry-run（release-please） | `npx release-please --dry-run release-pr (TODO)` | dry-run 列出至少一条 release PR 标题，或'no release' | skeleton: release-please 配置尚未接入（依赖 #4） | **SKIP** | 9 |
+| 1/6 | git identity 校验（必须含 areyoubugcoder） | `git -C /Users/han/coding-agent-workspace/mp2rss-cli config user.email` | 包含子串 areyoubugcoder | 241083775+areyoubugcoder@users.noreply.github.com | **PASS** | 15 |
+| 2/6 | 三种登录路径（-k / loopback / --no-browser） | `auth login -k <key> / auth login（loopback+curl 模拟） / echo key \| auth login --no-browser` | 三分支均写 0600 config；loopback callback 200 | 2a -k: 写盘 mode=600 ✓<br>2b loopback: port=60059 callback=200 落盘 ✓<br>2c --no-browser stdin: 落盘 ✓ | **PASS** | 401 |
+| 3/6 | 核心命令链（subscribe→list→search→articles→remove） | `mp subscribe/list/search/articles/remove --yes -o json \| jq 断言关键字段` | 5 条链路每条退出码 0；JSON camelCase 字段齐；最终 list 已剔除 | 3a subscribe: ok=true articleUrl=匹配 ✓<br>3b list: items≥1 字段齐 mpId=2234567 ✓<br>3c search 测试: items≥1 ✓<br>3d articles 2234567: items≥1 字段齐 ✓<br>3e remove 2234567 --yes: ok=true mpId 匹配 ✓<br>3e post-remove list: 不含 mpId=2234567 ✓ | **PASS** | 109 |
+| 4/6 | 错误路径（401 / 404 / 网络） | `mp list --api-key wrong / mp articles 9999999 / MP2RSS_API_URL=http://127.0.0.1:1 mp list` | 退出码 3/4/5；JSON error envelope code 字段一致 | 4a 错 key: exit=3 error.code=401 ✓<br>4b 未订阅 mpId: exit=4 error.code=404 ✓<br>4c 断网: exit=5 error.code=5 ✓ | **PASS** | 565 |
+| 5/6 | 质量门（make lint && make test && size ≤ 12 MiB） | `make lint && make test && stat -f%z mp2rss` | lint=0 && test=0 && size ≤ 12 MiB (12582912 bytes) | make lint: 0 ✓<br>make test: 0 (ok pkgs=6) ✓<br>binary size=8495714 bytes ≤ 12582912 ✓ | **PASS** | 5239 |
+| 6/6 | CHANGELOG 自动化（Conventional Commits 合规 + release-please 注记） | `git log --pretty=%s -20 \| 正则匹配 Conventional Commits` | 全部 commit 符合 (feat\|fix\|docs\|chore\|...): 格式 | Conventional Commits: 8/8 ✓（最近 20 条全合规）<br>release-please CLI 可用（真正的 dry-run 需在 CI 中带 GITHUB_TOKEN） | **PASS** | 23 |
 
 ## 备注
 
-本报告由 `test/e2e.sh` 自动生成。骨架阶段所有 step 均为 SKIP，
-Tasks #2–#7 完成后会逐个把 TODO 替换为真实 CLI 命令并产出 PASS/FAIL。
+- 本报告由 `test/e2e.sh` 自动生成，覆盖 plan「端到端验证（阶段一聚焦）」6 大检查项。
+- 走 mock 时使用 `test/mock-api`（stdlib only），endpoint 与 Open API 契约一致。
+- release-please 真正的 dry-run 需 GitHub token，本地用 Conventional Commits 合规扫描做代理校验；CI 会跑完整版。
