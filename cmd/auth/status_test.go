@@ -16,6 +16,8 @@ func TestStatusDTOShape(t *testing.T) {
 		Source:        "config",
 		APIURL:        "https://mp2rss.bugcode.dev",
 		FeedKeyMasked: "abcdef***",
+		Name:          "测试用户",
+		Email:         "user@example.com",
 		LastLoginAt:   1_705_000_000_000,
 		LastVerifyAt:  1_705_000_001_000,
 	}
@@ -30,7 +32,8 @@ func TestStatusDTOShape(t *testing.T) {
 	}
 
 	wantKeys := []string{
-		"loggedIn", "source", "apiUrl", "feedKeyMasked", "lastLoginAt", "lastVerifyAt",
+		"loggedIn", "source", "apiUrl", "feedKeyMasked",
+		"name", "email", "lastLoginAt", "lastVerifyAt",
 	}
 	gotKeys := make([]string, 0, len(got))
 	for k := range got {
@@ -60,7 +63,7 @@ func TestStatusDTOOmitsEmptyTimestamps(t *testing.T) {
 	var got map[string]any
 	_ = json.Unmarshal(b, &got)
 
-	for _, k := range []string{"lastLoginAt", "lastVerifyAt", "feedKeyMasked"} {
+	for _, k := range []string{"lastLoginAt", "lastVerifyAt", "feedKeyMasked", "name", "email"} {
 		if _, present := got[k]; present {
 			t.Errorf("%s should be omitted when empty, got %v", k, got[k])
 		}

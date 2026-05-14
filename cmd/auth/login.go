@@ -42,7 +42,7 @@ func newLoginCmd(deps *cliopts.Deps) *cobra.Command {
 			cfg := config.Get()
 
 			if flagFeedKey != "" {
-				return saveAndVerify(out, cfg, flagFeedKey)
+				return saveAndVerify(out, cfg, flagFeedKey, "", "")
 			}
 			if flagNoBrowse {
 				return runManualPaste(out, cfg, flagWeb)
@@ -78,7 +78,7 @@ func runLoopback(ctx context.Context, out io.Writer, cfg *config.Config, webOrig
 	if err != nil {
 		return errs.Newf(errs.CodeGeneric, "%s", err.Error())
 	}
-	return saveAndVerify(out, cfg, res.FeedKey)
+	return saveAndVerify(out, cfg, res.FeedKey, res.Email, res.Name)
 }
 
 func runManualPaste(out io.Writer, cfg *config.Config, webOrigin string) error {
@@ -91,25 +91,39 @@ func runManualPaste(out io.Writer, cfg *config.Config, webOrigin string) error {
 	if key == "" {
 		return errs.Newf(errs.CodeArgs, "未提供 Feed Key")
 	}
-	return saveAndVerify(out, cfg, key)
+	return saveAndVerify(out, cfg, key, "", "")
 }
 
 // saveAndVerify validates the key against the API, then persists on success.
-// The key is never printed in plaintext.
-func saveAndVerify(out io.Writer, cfg *config.Config, feedKey string) error {
+// The key is never printed in plaintext. email/name come from the OAuth
+// loopback callback and may be empty in -k / --no-browser flows.
+func saveAndVerify(out io.Writer, cfg *config.Config, feedKey, email, name string) error {
 	apiURL := cfg.EffectiveAPIURL()
 	c := client.New(apiURL, feedKey)
 	if err := c.VerifyAuth(); err != nil {
 		return err
 	}
 	cfg.FeedKey = feedKey
+	if email != "" {
+		cfg.Email = email
+	}
+	if name != "" {
+		cfg.Name = name
+	}
 	cfg.LastLoginAt = time.Now().Unix()
 	cfg.LastVerifyAt = cfg.LastLoginAt
 	if err := cfg.Save(); err != nil {
 		return errs.Wrap(errs.CodeGeneric, err)
 	}
-	fmt.Fprintf(out, "✓ 已登录。Feed Key %s（已写入 ~/.mp2rss/config.json，权限 0600）\n",
-		config.MaskKey(feedKey))
-	fmt.Fprintf(out, "  API：%s\n", apiURL)
+	switch {
+	case cfg.Name != "" && cfg.Email != "":
+		fmt.Fprintf(out, "✓ 已登录：%s <%s>\n", cfg.Name, cfg.Email)
+	case cfg.Email != "":
+		fmt.Fprintf(out, "✓ 已登录：%s\n", cfg.Email)
+	case cfg.Name != "":
+		fmt.Fprintf(out, "✓ 已登录：%s\n", cfg.Name)
+	default:
+		fmt.Fprintln(out, "✓ 已登录。")
+	}
 	return nil
 }

@@ -48,6 +48,8 @@ var AllowedOrigins = []string{
 type CallbackResult struct {
 	FeedKey string `json:"feed_key"`
 	State   string `json:"state"`
+	Email   string `json:"email,omitempty"`
+	Name    string `json:"name,omitempty"`
 }
 
 // Flow is a single-shot loopback server.

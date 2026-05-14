@@ -66,7 +66,12 @@ func TestWait_SuccessfulCallback(t *testing.T) {
 
 	// Wait a hair for the server to spin up, then POST.
 	time.Sleep(50 * time.Millisecond)
-	body, _ := json.Marshal(map[string]string{"feed_key": "k1", "state": f.State})
+	body, _ := json.Marshal(map[string]string{
+		"feed_key": "k1",
+		"state":    f.State,
+		"email":    "user@example.com",
+		"name":     "测试用户",
+	})
 	req, _ := http.NewRequest(http.MethodPost, f.CallbackURL(), bytes.NewReader(body))
 	req.Header.Set("Origin", "http://localhost:3000")
 	req.Header.Set("Content-Type", "application/json")
@@ -86,6 +91,12 @@ func TestWait_SuccessfulCallback(t *testing.T) {
 		}
 		if r.res.FeedKey != "k1" {
 			t.Errorf("FeedKey = %q, want k1", r.res.FeedKey)
+		}
+		if r.res.Email != "user@example.com" {
+			t.Errorf("Email = %q, want user@example.com", r.res.Email)
+		}
+		if r.res.Name != "测试用户" {
+			t.Errorf("Name = %q, want 测试用户", r.res.Name)
 		}
 	case <-time.After(2 * time.Second):
 		t.Fatal("Wait did not return")

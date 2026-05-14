@@ -49,6 +49,8 @@ func TestClearKeepsAPIURL(t *testing.T) {
 	c := Get()
 	c.FeedKey = "secret"
 	c.APIURL = "https://api.example.com"
+	c.Email = "u@e.com"
+	c.Name = "测试用户"
 	c.LastVerifyAt = 1234
 	if err := c.Save(); err != nil {
 		t.Fatal(err)
@@ -61,6 +63,12 @@ func TestClearKeepsAPIURL(t *testing.T) {
 	}
 	if c.APIURL != "https://api.example.com" {
 		t.Errorf("APIURL = %q, want preserved", c.APIURL)
+	}
+	if c.Email != "" {
+		t.Errorf("Email = %q, want empty", c.Email)
+	}
+	if c.Name != "" {
+		t.Errorf("Name = %q, want empty", c.Name)
 	}
 	if c.LastVerifyAt != 0 {
 		t.Errorf("LastVerifyAt = %d, want 0", c.LastVerifyAt)

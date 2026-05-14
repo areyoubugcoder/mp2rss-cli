@@ -20,6 +20,8 @@ const DefaultAPIBaseURL = "https://mp2rss.bugcode.dev"
 type Config struct {
 	FeedKey      string `json:"feed_key,omitempty"`
 	APIURL       string `json:"api_url,omitempty"`
+	Email        string `json:"email,omitempty"`
+	Name         string `json:"name,omitempty"`
 	LastLoginAt  int64  `json:"last_login_at,omitempty"`
 	LastVerifyAt int64  `json:"last_verify_at,omitempty"`
 }
@@ -94,9 +96,11 @@ func (c *Config) Save() error {
 	return os.Chmod(path, 0o600)
 }
 
-// Clear wipes the Feed Key but preserves api_url.
+// Clear wipes the Feed Key and identity but preserves api_url.
 func (c *Config) Clear() error {
 	c.FeedKey = ""
+	c.Email = ""
+	c.Name = ""
 	c.LastLoginAt = 0
 	c.LastVerifyAt = 0
 	return c.Save()

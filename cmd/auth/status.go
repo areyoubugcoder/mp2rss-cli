@@ -21,6 +21,8 @@ type statusDTO struct {
 	Source        string `json:"source"` // "env" | "config" | "none"
 	APIURL        string `json:"apiUrl"`
 	FeedKeyMasked string `json:"feedKeyMasked,omitempty"`
+	Name          string `json:"name,omitempty"`
+	Email         string `json:"email,omitempty"`
 	LastLoginAt   int64  `json:"lastLoginAt,omitempty"`  // unix millis
 	LastVerifyAt  int64  `json:"lastVerifyAt,omitempty"` // unix millis
 }
@@ -37,6 +39,8 @@ func newStatusCmd(deps *cliopts.Deps) *cobra.Command {
 				LoggedIn:      key != "",
 				APIURL:        cfg.EffectiveAPIURL(),
 				FeedKeyMasked: config.MaskKey(key),
+				Name:          cfg.Name,
+				Email:         cfg.Email,
 			}
 			switch {
 			case os.Getenv("MP2RSS_FEED_KEY") != "":
@@ -61,12 +65,16 @@ func newStatusCmd(deps *cliopts.Deps) *cobra.Command {
 			w := cmd.OutOrStdout()
 			if !dto.LoggedIn {
 				fmt.Fprintln(w, "状态：未登录")
-				fmt.Fprintf(w, "API：%s\n", dto.APIURL)
 				fmt.Fprintln(w, "登录：mp2rss auth login")
 				return nil
 			}
 			fmt.Fprintf(w, "状态：已登录（来源：%s）\n", dto.Source)
-			fmt.Fprintf(w, "API：%s\n", dto.APIURL)
+			if dto.Name != "" {
+				fmt.Fprintf(w, "用户：%s\n", dto.Name)
+			}
+			if dto.Email != "" {
+				fmt.Fprintf(w, "邮箱：%s\n", dto.Email)
+			}
 			fmt.Fprintf(w, "Feed Key：%s\n", dto.FeedKeyMasked)
 			if cfg.LastVerifyAt > 0 {
 				fmt.Fprintf(w, "上次校验：%s\n",
