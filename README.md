@@ -1,6 +1,6 @@
 # mp2rss-cli
 
-[Mp2RSS](https://mp2rss.bugcode.dev) 的命令行客户端 —— 把微信公众号转成 RSS 订阅源，管理订阅、查看历史文章，公众号订阅功能。
+[Mp2RSS](https://mp2rss.bugcode.dev) 的命令行客户端 —— WeChat 公众号 → RSS feed，命令行管理订阅、查看历史文章。AI Agent 友好（Claude Code / Cursor / OpenClaw skills）。Keywords: wechat, weixin, 微信, 公众号, rss, feed, subscription, 订阅.
 
 [![Release](https://img.shields.io/github/v/release/areyoubugcoder/mp2rss-cli?display_name=tag&sort=semver)](https://github.com/areyoubugcoder/mp2rss-cli/releases)
 [![Downloads](https://img.shields.io/github/downloads/areyoubugcoder/mp2rss-cli/total)](https://github.com/areyoubugcoder/mp2rss-cli/releases)
