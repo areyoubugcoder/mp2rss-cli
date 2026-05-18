@@ -6,7 +6,7 @@ description: 公众号 RSS 服务的认证管理 —— 登录 / 登出 / 查看
 
 # mp2rss-auth Skill
 
-mp2rss CLI 的登录态管理 —— 登录、登出、查看 Feed Key 与登录状态。
+Mp2rss CLI 的登录态管理 —— 登录、登出、查看 Feed Key 与登录状态。
 
 ## Prerequisites
 

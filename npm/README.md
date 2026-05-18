@@ -1,6 +1,6 @@
 # @mp2rss/cli
 
-[mp2rss](https://mp2rss.bugcode.dev) 的命令行客户端。
+[Mp2rss](https://mp2rss.bugcode.dev) 的命令行客户端。
 
 本 npm 包是 [mp2rss-cli](https://github.com/areyoubugcoder/mp2rss-cli) Go 二进制的包装，`postinstall` 按平台下载对应可执行文件。
 

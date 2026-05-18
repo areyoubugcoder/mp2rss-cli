@@ -1,6 +1,6 @@
 {
   "name": "mp2rss-cli",
-  "description": "Agent skills for the mp2rss CLI: auth / mp",
+  "description": "Agent skills for the Mp2rss CLI: auth / mp",
   "author": {
     "name": "areyoubugcoder"
   },

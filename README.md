@@ -1,6 +1,6 @@
 # Mp2rss-cli（微信公众号订阅，公众号转RSS、JSON）
 
-[Mp2RSS](https://mp2rss.bugcode.dev) 的命令行客户端 —— 管理订阅、订阅微信公众号，文章转RSS、JSON，查看历史文章。AI Agent 友好（Claude Code / Cursor / OpenClaw skills）。Keywords: wechat, weixin, 微信, 公众号, rss, feed, subscription, 订阅.
+[Mp2RSS](https://mp2rss.bugcode.dev) 的命令行客户端 —— 管理订阅、订阅微信公众号，文章转RSS、JSON，查看历史文章。AI Agent 友好（Claude Code / Cursor skills）。Keywords: wechat, weixin, 微信, 公众号, rss, feed, subscription, 订阅.
 
 [![Release](https://img.shields.io/github/v/release/areyoubugcoder/mp2rss-cli?display_name=tag&sort=semver)](https://github.com/areyoubugcoder/mp2rss-cli/releases)
 [![Downloads](https://img.shields.io/github/downloads/areyoubugcoder/mp2rss-cli/total)](https://github.com/areyoubugcoder/mp2rss-cli/releases)
@@ -110,7 +110,7 @@ Feed Key 可在 <https://mp2rss.bugcode.dev/> 登录后查看或重置。FAQ / �
 
 ## AI Agent 如何使用
 
-mp2rss 在 `skills/` 目录提供两个 agent skill —— [`mp2rss-auth`](skills/mp2rss-auth/SKILL.md)（登录态管理）和 [`mp2rss-mp`](skills/mp2rss-mp/SKILL.md)（订阅与文章），让 AI Agent 用自然语言驱动 mp2rss CLI。完整安装与使用步骤见 **[AI Agent 安装指南](docs/agent-install.md)**。
+Mp2rss 在 `skills/` 目录提供两个 agent skill —— [`mp2rss-auth`](skills/mp2rss-auth/SKILL.md)（登录态管理）和 [`mp2rss-mp`](skills/mp2rss-mp/SKILL.md)（订阅与文章），让 AI Agent 用自然语言驱动 Mp2rss CLI。完整安装与使用步骤见 **[AI Agent 安装指南](docs/agent-install.md)**。
 
 ### 快速安装
 
@@ -122,7 +122,6 @@ pnpm add -g @mp2rss/cli
 npx skills add areyoubugcoder/mp2rss-cli -y -g          # Claude Code / Cursor 通用，一次装齐两个 skill
 /plugin marketplace add areyoubugcoder/mp2rss-cli       # Claude Code 内置 plugin marketplace
 /plugin install mp2rss-cli@mp2rss
-openclaw skills install mp2rss-auth mp2rss-mp           # OpenClaw 🦞 单 skill 安装
 
 # 3. 登录
 mp2rss auth login

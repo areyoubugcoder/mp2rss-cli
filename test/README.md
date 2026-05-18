@@ -7,7 +7,7 @@
 | 路径 | 用途 |
 |---|---|
 | `e2e.sh` | bash 端到端脚本，覆盖 plan「端到端验证（阶段一聚焦）」6 大检查项；运行后生成 `e2e-report.md`。 |
-| `mock-api/main.go` | 最小 Go httptest server，模拟 mp2rss Open API（4 个 endpoint，内存存储）。仅在未提供真实 `MP2RSS_TEST_FEED_KEY` 时由 `e2e.sh` 自动启动作为替身。 |
+| `mock-api/main.go` | 最小 Go httptest server，模拟 Mp2rss Open API（4 个 endpoint，内存存储）。仅在未提供真实 `MP2RSS_TEST_FEED_KEY` 时由 `e2e.sh` 自动启动作为替身。 |
 | `e2e-report.md` | `e2e.sh` 每次运行后覆盖写入的报告。**生成物，不要手改。** |
 
 ## 重要：mock-api 不是产线依赖

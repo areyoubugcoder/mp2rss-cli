@@ -1,12 +1,12 @@
 ---
 name: mp2rss-mp
 version: 0.1.0
-description: 微信公众号订阅与文章管理（基于把公众号转成 RSS 的 mp2rss 服务）—— 订阅 / 列出 / 取消订阅微信公众号，查询某个公众号的历史文章，按关键词模糊搜索已订阅源。匹配「订阅这个公众号 <文章 URL>」「把这个公众号转成 RSS」「订阅 <mp.weixin.qq.com/s/...>」「我订阅了哪些公众号」「列一下我的公众号 RSS」「这个公众号最近发了什么」「<X 号> 的历史文章」「拉一下 X 这个号的文章」「取消订阅 X」「把 X 从订阅里删了」「搜一下我订阅的公众号 X」「mp2rss mp list / search / subscribe / remove / articles」。订阅时传入的是公众号「任意一篇文章的 URL」（mp.weixin.qq.com/s/...），不是公众号名字本身。
+description: 微信公众号订阅与文章管理（基于把公众号转成 RSS 的 Mp2rss 服务）—— 订阅 / 列出 / 取消订阅微信公众号，查询某个公众号的历史文章，按关键词模糊搜索已订阅源。匹配「订阅这个公众号 <文章 URL>」「把这个公众号转成 RSS」「订阅 <mp.weixin.qq.com/s/...>」「我订阅了哪些公众号」「列一下我的公众号 RSS」「这个公众号最近发了什么」「<X 号> 的历史文章」「拉一下 X 这个号的文章」「取消订阅 X」「把 X 从订阅里删了」「搜一下我订阅的公众号 X」「mp2rss mp list / search / subscribe / remove / articles」。订阅时传入的是公众号「任意一篇文章的 URL」（mp.weixin.qq.com/s/...），不是公众号名字本身。
 ---
 
 # mp2rss-mp Skill
 
-通过 mp2rss CLI 管理微信公众号订阅与文章 —— 订阅 / 列出 / 取消订阅微信公众号，按 mpId 查询单个公众号的历史文章。
+通过 Mp2rss CLI 管理微信公众号订阅与文章 —— 订阅 / 列出 / 取消订阅微信公众号，按 mpId 查询单个公众号的历史文章。
 
 ## Prerequisites
 
@@ -76,7 +76,7 @@ mp2rss mp search 财经 -o json
 mp2rss mp subscribe <article-url> [-o json]
 ```
 
-⚠️ **传入的是文章 URL**（`https://mp.weixin.qq.com/s/...`），不是公众号名、不是二维码、也不是公众号主页链接。从公众号任意一篇文章里复制链接即可，mp2rss 会从该文章解析出所属公众号并把整个公众号订阅到你的 Feed。
+⚠️ **传入的是文章 URL**（`https://mp.weixin.qq.com/s/...`），不是公众号名、不是二维码、也不是公众号主页链接。从公众号任意一篇文章里复制链接即可，Mp2rss 会从该文章解析出所属公众号并把整个公众号订阅到你的 Feed。
 
 ```bash
 mp2rss mp subscribe https://mp.weixin.qq.com/s/abcDEFghIJKlmnop

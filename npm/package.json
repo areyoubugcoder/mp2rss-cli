@@ -1,7 +1,7 @@
 {
   "name": "@mp2rss/cli",
   "version": "0.0.0",
-  "description": "mp2rss CLI — 微信公众号 RSS 订阅与文章管理命令行工具",
+  "description": "Mp2rss CLI — 微信公众号 RSS 订阅与文章管理命令行工具",
   "keywords": [
     "mp2rss",
     "cli",
