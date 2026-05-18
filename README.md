@@ -110,24 +110,22 @@ Feed Key 可在 <https://mp2rss.bugcode.dev/> 登录后查看或重置。FAQ / �
 
 ## AI Agent 如何使用
 
-mp2rss 在 `skills/` 目录提供两个 agent skill —— [`mp2rss-auth`](skills/mp2rss-auth/SKILL.md)（登录态管理）和 [`mp2rss-mp`](skills/mp2rss-mp/SKILL.md)（订阅与文章），让 AI Agent 用自然语言驱动 mp2rss CLI。
+mp2rss 在 `skills/` 目录提供两个 agent skill —— [`mp2rss-auth`](skills/mp2rss-auth/SKILL.md)（登录态管理）和 [`mp2rss-mp`](skills/mp2rss-mp/SKILL.md)（订阅与文章），让 AI Agent 用自然语言驱动 mp2rss CLI。完整安装与使用步骤见 **[AI Agent 安装指南](docs/agent-install.md)**。
 
-### 安装
+### 快速安装
 
 ```bash
-# 1. npx skills（Claude Code / Cursor 通用，最简）
-npx skills add areyoubugcoder/mp2rss-cli -y -g
-```
+# 1. 装 CLI（Node ≥ 18）
+pnpm add -g @mp2rss/cli
 
-```
-# 2. Claude Code 内置 plugin marketplace
-/plugin marketplace add areyoubugcoder/mp2rss-cli
+# 2. 装 Skills，任选其一
+npx skills add areyoubugcoder/mp2rss-cli -y -g          # Claude Code / Cursor 通用，一次装齐两个 skill
+/plugin marketplace add areyoubugcoder/mp2rss-cli       # Claude Code 内置 plugin marketplace
 /plugin install mp2rss-cli@mp2rss
-```
+openclaw skills install mp2rss-auth mp2rss-mp           # OpenClaw 🦞 单 skill 安装
 
-```bash
-# 3. OpenClaw🦞（https://clawhub.ai/mp2rss/mp2rss-cli）
-clawhub package install mp2rss-cli
+# 3. 登录
+mp2rss auth login
 ```
 
 ### 使用举例
