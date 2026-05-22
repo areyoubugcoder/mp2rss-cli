@@ -223,6 +223,9 @@ func (f *Flow) originAllowed(origin string) bool {
 	if origin == "" {
 		return false
 	}
+	if f.WebOrigin != "" && origin == f.WebOrigin {
+		return true
+	}
 	list := f.AllowedOrigins
 	if len(list) == 0 {
 		list = AllowedOrigins
