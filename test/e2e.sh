@@ -431,6 +431,64 @@ step_3_core_commands() {
   [[ "$result" == "PASS" ]] || return 1
 }
 
+# ---- step 3.5：X 命令链 ------------------------------------------
+# 单独成段，避免污染 step_3 的报告语义；编号沿用 3.5/7 保持 7 大步骤总数稳定。
+#
+# X 账号搜索与订阅 / 取消订阅仅在 Web 控制台提供，CLI 与 Open API 都不暴露
+# 这些写类端点。mock-api 预置了 xUserId=44196397 的已订阅账号，e2e 只校验
+# 读类链路：list → posts → articles。
+step_3_5_x_commands() {
+  local id="3.5/7" desc="X 命令链（list→posts→articles）"
+  step_header "$id" "$desc"
+  local t0; t0=$(now_ms)
+  local notes=()
+  local fails=()
+
+  reset_cli_state
+  HOME="$SANDBOX_HOME" "$BIN" auth login -k "$FEED_KEY" --api-url "$API_URL" >/dev/null 2>&1
+
+  # x list（mock 预置了 44196397）
+  local out
+  out=$(HOME="$SANDBOX_HOME" "$BIN" x list --api-url "$API_URL" -o json 2>&1) || true
+  if echo "$out" | jq -e '.items | length >= 1' >/dev/null \
+     && echo "$out" | jq -e '.items[0] | has("xUserId") and has("xDisplayName") and has("createdAt") and .sourceType == "x"' >/dev/null; then
+    notes+=("3.5a x list: items≥1 字段齐 sourceType=x ✓")
+  else
+    fails+=("3.5a x list JSON 不符预期：${out:0:200}")
+  fi
+
+  # x posts
+  out=$(HOME="$SANDBOX_HOME" "$BIN" x posts 44196397 --api-url "$API_URL" -o json 2>&1) || true
+  if echo "$out" | jq -e '.items | length >= 1' >/dev/null \
+     && echo "$out" | jq -e '.items[0] | has("postId") and has("content") and has("postedAt")' >/dev/null; then
+    notes+=("3.5b x posts 44196397: items≥1 字段齐 ✓")
+  else
+    fails+=("3.5b x posts 失败：${out:0:200}")
+  fi
+
+  # x articles
+  out=$(HOME="$SANDBOX_HOME" "$BIN" x articles 44196397 --api-url "$API_URL" -o json 2>&1) || true
+  if echo "$out" | jq -e '.items | length >= 1' >/dev/null \
+     && echo "$out" | jq -e '.items[0] | has("url") and has("title") and has("publishedAt")' >/dev/null; then
+    notes+=("3.5c x articles 44196397: items≥1 字段齐 ✓")
+  else
+    fails+=("3.5c x articles 失败：${out:0:200}")
+  fi
+
+  local result="PASS"
+  local actual; actual=$(IFS=$'\n'; echo "${notes[*]}")
+  if (( ${#fails[@]} > 0 )); then
+    result="FAIL"
+    actual="${actual}${actual:+$'\n'}失败：$(IFS=$'\n'; echo "${fails[*]}")"
+  fi
+  local t1; t1=$(now_ms); local dur=$((t1 - t0))
+  record_step "$id" "$desc" \
+    "x list / x posts 44196397 / x articles 44196397 -o json" \
+    "3 条读类链路：JSON 字段齐；mock 预置 xUserId=44196397 已订阅" \
+    "$actual" "$result" "$dur"
+  [[ "$result" == "PASS" ]] || return 1
+}
+
 # ---- step 4：错误路径 --------------------------------------------
 step_4_error_paths() {
   local id="4/7" desc="错误路径（401 / 404 / 网络）"
@@ -716,6 +774,7 @@ main() {
   step_1_git_identity     || overall=1
   step_2_login_flows      || overall=1
   step_3_core_commands    || overall=1
+  step_3_5_x_commands     || overall=1
   step_4_error_paths      || overall=1
   step_5_quality_gates    || overall=1
   step_6_changelog_dryrun || overall=1

@@ -9,6 +9,7 @@ package client
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -61,13 +62,33 @@ func (c *Client) BaseURL() string { return c.baseURL }
 // DTOs
 // ---------------------------------------------------------------------------
 
-// Subscription is one row of /open-api/subscriptions.
+// Subscription is one row of GET /open-api/subscriptions.
+//
+// The endpoint returns a discriminated union keyed by `sourceType`:
+//   - MP items populate the Mp* fields
+//   - X items populate the X* fields
+//
+// X-specific fields use omitempty so an MP-filtered listing stays clean; MP
+// fields likewise omitempty so X-filtered listing isn't polluted with
+// `mpId:0` noise.
 type Subscription struct {
-	MpID            int64  `json:"mpId"`
-	MpName          string `json:"mpName"`
-	MpAvatarURL     string `json:"mpAvatarUrl"`
-	CreatedAt       int64  `json:"createdAt"`
-	MpLastArticleAt int64  `json:"mpLastArticleAt"`
+	SourceType string `json:"sourceType,omitempty"`
+
+	// MP fields
+	MpID            int64  `json:"mpId,omitempty"`
+	MpName          string `json:"mpName,omitempty"`
+	MpAvatarURL     string `json:"mpAvatarUrl,omitempty"`
+	MpLastArticleAt int64  `json:"mpLastArticleAt,omitempty"`
+
+	// X fields
+	XUserID      string `json:"xUserId,omitempty"`
+	XUsername    string `json:"xUsername,omitempty"`
+	XDisplayName string `json:"xDisplayName,omitempty"`
+	XAvatarURL   string `json:"xAvatarUrl,omitempty"`
+	XVerified    bool   `json:"xVerified,omitempty"`
+	XLastItemAt  int64  `json:"xLastItemAt,omitempty"`
+
+	CreatedAt int64 `json:"createdAt,omitempty"`
 }
 
 // SubscriptionList is the response body of GET /open-api/subscriptions.
@@ -102,14 +123,76 @@ type SubscribeRequest struct {
 }
 
 // ---------------------------------------------------------------------------
-// API methods
+// X DTOs
+// ---------------------------------------------------------------------------
+//
+// X 账号搜索与订阅 / 取消订阅仅在 Web 控制台提供——Open API 与本 client
+// 都不暴露这些写类端点。只保留读类 DTO（posts / articles）。
+
+// XPostMedia is one media attachment on an X post.
+type XPostMedia struct {
+	URL  string `json:"url"`
+	Type string `json:"type"`
+}
+
+// XPost is one row of GET /open-api/x/:xUserId/posts.
+type XPost struct {
+	PostID        string         `json:"postId"`
+	Content       string         `json:"content"`
+	Media         []XPostMedia   `json:"media"`
+	RetweetedPost map[string]any `json:"retweetedPost"`
+	QuotedPost    map[string]any `json:"quotedPost"`
+	ThreadPosts   []any          `json:"threadPosts"`
+	PostedAt      int64          `json:"postedAt"`
+}
+
+// XPostList is the response body of GET /open-api/x/:xUserId/posts.
+type XPostList struct {
+	Items    []XPost `json:"items"`
+	Total    int     `json:"total"`
+	Page     int     `json:"page"`
+	PageSize int     `json:"pageSize"`
+}
+
+// XArticle is one row of GET /open-api/x/:xUserId/articles.
+type XArticle struct {
+	URL             string `json:"url"`
+	Title           string `json:"title"`
+	Description     string `json:"description"`
+	ContentMarkdown string `json:"contentMarkdown"`
+	CoverURL        string `json:"coverUrl"`
+	PublishedAt     int64  `json:"publishedAt"`
+}
+
+// XArticleList is the response body of GET /open-api/x/:xUserId/articles.
+type XArticleList struct {
+	Items    []XArticle `json:"items"`
+	Total    int        `json:"total"`
+	Page     int        `json:"page"`
+	PageSize int        `json:"pageSize"`
+}
+
+// ---------------------------------------------------------------------------
+// API methods (MP)
 // ---------------------------------------------------------------------------
 
-// ListSubscriptions calls GET /open-api/subscriptions.
+// ListSubscriptions calls GET /open-api/subscriptions without a sourceType
+// filter (server default = all). Prefer ListSubscriptionsFiltered when you
+// want to scope to a single source type.
 func (c *Client) ListSubscriptions(q string, page, pageSize int) (*SubscriptionList, error) {
+	return c.ListSubscriptionsFiltered(q, "", page, pageSize)
+}
+
+// ListSubscriptionsFiltered calls GET /open-api/subscriptions?sourceType=<...>.
+//
+// sourceType must be "", "mp", "x" or "all". Empty omits the param entirely.
+func (c *Client) ListSubscriptionsFiltered(q, sourceType string, page, pageSize int) (*SubscriptionList, error) {
 	v := url.Values{}
 	if q != "" {
 		v.Set("q", q)
+	}
+	if sourceType != "" {
+		v.Set("sourceType", sourceType)
 	}
 	if page > 0 {
 		v.Set("page", strconv.Itoa(page))
@@ -161,6 +244,47 @@ func (c *Client) VerifyAuth() error {
 }
 
 // ---------------------------------------------------------------------------
+// API methods (X)
+// ---------------------------------------------------------------------------
+//
+// 只暴露读类端点（posts / articles）。X 账号搜索与订阅 / 取消订阅仅在
+// Web 控制台提供，本 client 不再持有对应方法。
+
+// XListPosts calls GET /open-api/x/:xUserId/posts.
+func (c *Client) XListPosts(xUserID string, page, pageSize int) (*XPostList, error) {
+	v := url.Values{}
+	if page > 0 {
+		v.Set("page", strconv.Itoa(page))
+	}
+	if pageSize > 0 {
+		v.Set("pageSize", strconv.Itoa(pageSize))
+	}
+	path := "/open-api/x/" + url.PathEscape(xUserID) + "/posts"
+	var out XPostList
+	if err := c.do(http.MethodGet, path, v, nil, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// XListArticles calls GET /open-api/x/:xUserId/articles.
+func (c *Client) XListArticles(xUserID string, page, pageSize int) (*XArticleList, error) {
+	v := url.Values{}
+	if page > 0 {
+		v.Set("page", strconv.Itoa(page))
+	}
+	if pageSize > 0 {
+		v.Set("pageSize", strconv.Itoa(pageSize))
+	}
+	path := "/open-api/x/" + url.PathEscape(xUserID) + "/articles"
+	var out XArticleList
+	if err := c.do(http.MethodGet, path, v, nil, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// ---------------------------------------------------------------------------
 // transport
 // ---------------------------------------------------------------------------
 
@@ -168,9 +292,16 @@ type apiError struct {
 	ErrorMessage string `json:"errorMessage"`
 }
 
-// do executes a request with one retry on 429 / 5xx. body, if non-nil, is
-// JSON-encoded; out, if non-nil, decodes the response body.
+// do is the context-less variant — equivalent to doCtx(context.Background(),...).
 func (c *Client) do(method, path string, query url.Values, body any, out any) error {
+	return c.doCtx(context.Background(), method, path, query, body, out)
+}
+
+// doCtx executes a request with one retry on 429 / 5xx. body, if non-nil, is
+// JSON-encoded; out, if non-nil, decodes the response body.
+//
+// ctx is plumbed onto every request so callers can cancel mid-flight.
+func (c *Client) doCtx(ctx context.Context, method, path string, query url.Values, body any, out any) error {
 	full := c.baseURL + path
 	if len(query) > 0 {
 		full += "?" + query.Encode()
@@ -188,7 +319,12 @@ func (c *Client) do(method, path string, query url.Values, body any, out any) er
 	const maxAttempts = 2 // initial + 1 retry
 	var lastErr error
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
-		req, err := http.NewRequest(method, full, bytes.NewReader(bodyBytes))
+		// Bail early if the caller already canceled.
+		if err := ctx.Err(); err != nil {
+			return errs.Wrap(errs.CodeGeneric, err)
+		}
+
+		req, err := http.NewRequestWithContext(ctx, method, full, bytes.NewReader(bodyBytes))
 		if err != nil {
 			return errs.Wrap(errs.CodeGeneric, err)
 		}
@@ -203,6 +339,10 @@ func (c *Client) do(method, path string, query url.Values, body any, out any) er
 
 		resp, err := c.httpClient.Do(req)
 		if err != nil {
+			// Context cancel surfaces here — don't retry, don't mask.
+			if ctxErr := ctx.Err(); ctxErr != nil {
+				return errs.Wrap(errs.CodeGeneric, ctxErr)
+			}
 			lastErr = err
 			// transport error → retry once
 			if attempt < maxAttempts {

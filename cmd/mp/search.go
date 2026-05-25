@@ -28,7 +28,7 @@ func newSearchCmd(deps *cliopts.Deps) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			list, err := c.ListSubscriptions(kw, flagPage, flagPageSize)
+			list, err := c.ListSubscriptionsFiltered(kw, "mp", flagPage, flagPageSize)
 			if err != nil {
 				return err
 			}

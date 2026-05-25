@@ -9,6 +9,7 @@ import (
 	"github.com/areyoubugcoder/mp2rss-cli/cmd/auth"
 	"github.com/areyoubugcoder/mp2rss-cli/cmd/mp"
 	"github.com/areyoubugcoder/mp2rss-cli/cmd/update"
+	xcmd "github.com/areyoubugcoder/mp2rss-cli/cmd/x"
 	"github.com/areyoubugcoder/mp2rss-cli/internal/cliopts"
 	"github.com/areyoubugcoder/mp2rss-cli/internal/config"
 	"github.com/areyoubugcoder/mp2rss-cli/internal/errs"
@@ -27,9 +28,10 @@ var (
 func newRootCmd() *cobra.Command {
 	root := &cobra.Command{
 		Use:   "mp2rss",
-		Short: "mp2rss CLI — 微信公众号 RSS 订阅管理",
+		Short: "mp2rss CLI — 公众号、X 等多信息源 RSS 订阅管理",
 		Long: `mp2rss CLI 是 mp2rss.bugcode.dev 的命令行客户端。
-登录后可订阅公众号、查询文章、管理订阅列表，输出支持表格与 JSON 两种格式。
+登录后可订阅微信公众号、X（Twitter）账号、查询文章 / 推文 / 长文、
+管理订阅列表，输出支持表格与 JSON 两种格式。
 
 支持环境变量：
   MP2RSS_FEED_KEY   覆盖 Feed Key（优先级高于配置文件）
@@ -55,6 +57,7 @@ func newRootCmd() *cobra.Command {
 
 	root.AddCommand(auth.NewCmd(deps))
 	root.AddCommand(mp.NewCmd(deps))
+	root.AddCommand(xcmd.NewCmd(deps))
 	root.AddCommand(update.NewCmd())
 
 	return root

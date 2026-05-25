@@ -26,11 +26,20 @@ import (
 const MockFeedKey = "test-feed-key-0123456789abcdef"
 
 type subscription struct {
-	MPID            int64  `json:"mpId"`
-	MPName          string `json:"mpName"`
-	MPAvatarURL     any    `json:"mpAvatarUrl"`
-	CreatedAt       int64  `json:"createdAt"`
-	MPLastArticleAt int64  `json:"mpLastArticleAt"`
+	SourceType      string `json:"sourceType"`
+	MPID            int64  `json:"mpId,omitempty"`
+	MPName          string `json:"mpName,omitempty"`
+	MPAvatarURL     any    `json:"mpAvatarUrl,omitempty"`
+	MPLastArticleAt int64  `json:"mpLastArticleAt,omitempty"`
+
+	XUserID      string `json:"xUserId,omitempty"`
+	XUsername    string `json:"xUsername,omitempty"`
+	XDisplayName string `json:"xDisplayName,omitempty"`
+	XAvatarURL   any    `json:"xAvatarUrl,omitempty"`
+	XVerified    bool   `json:"xVerified,omitempty"`
+	XLastItemAt  int64  `json:"xLastItemAt,omitempty"`
+
+	CreatedAt int64 `json:"createdAt"`
 }
 
 type article struct {
@@ -45,13 +54,56 @@ type article struct {
 	UpdatedAt       int64  `json:"updatedAt"`
 }
 
-type store struct {
-	mu   sync.Mutex
-	subs map[int64]subscription
+type xPost struct {
+	PostID        string `json:"postId"`
+	Content       string `json:"content"`
+	Media         []any  `json:"media"`
+	RetweetedPost any    `json:"retweetedPost"`
+	QuotedPost    any    `json:"quotedPost"`
+	ThreadPosts   []any  `json:"threadPosts"`
+	PostedAt      int64  `json:"postedAt"`
 }
 
+type xArticle struct {
+	URL             string `json:"url"`
+	Title           string `json:"title"`
+	Description     string `json:"description"`
+	ContentMarkdown string `json:"contentMarkdown"`
+	CoverURL        string `json:"coverUrl"`
+	PublishedAt     int64  `json:"publishedAt"`
+}
+
+type store struct {
+	mu    sync.Mutex
+	subs  map[int64]subscription  // mpId → mp subscription
+	xSubs map[string]subscription // xUserId → x subscription
+}
+
+// X 账号搜索与订阅 / 取消订阅仅在 Web 控制台提供，Open API 不暴露这些写类
+// 端点；mock 通过预置一组已订阅 X 账号让 list/posts/articles 端点的 e2e
+// 仍可走通。
 func newStore() *store {
-	return &store{subs: map[int64]subscription{}}
+	s := &store{
+		subs:  map[int64]subscription{},
+		xSubs: map[string]subscription{},
+	}
+	for xUserID, sub := range seedXSubs {
+		s.xSubs[xUserID] = sub
+	}
+	return s
+}
+
+var seedXSubs = map[string]subscription{
+	"44196397": {
+		SourceType:   "x",
+		XUserID:      "44196397",
+		XUsername:    "elonmusk",
+		XDisplayName: "Elon Musk",
+		XAvatarURL:   nil,
+		XVerified:    true,
+		CreatedAt:    1776640000000,
+		XLastItemAt:  1776854096000,
+	},
 }
 
 // 预置一组示例文章，方便 articles 端点测试。
@@ -79,6 +131,19 @@ var seedArticles = map[int64][]article{
 			PublishedAt:     1744972800000,
 			UpdatedAt:       1744972900000,
 		},
+	},
+}
+
+var seedXPosts = map[string][]xPost{
+	"44196397": {
+		{PostID: "1234567890", Content: "hello world from X", Media: []any{}, RetweetedPost: nil, QuotedPost: nil, ThreadPosts: []any{}, PostedAt: 1746864000000},
+		{PostID: "1234567891", Content: "good morning", Media: []any{}, RetweetedPost: nil, QuotedPost: nil, ThreadPosts: []any{}, PostedAt: 1746950400000},
+	},
+}
+
+var seedXArticles = map[string][]xArticle{
+	"44196397": {
+		{URL: "https://x.com/elonmusk/article/1", Title: "My take on AI", Description: "summary", ContentMarkdown: "# AI", CoverURL: "", PublishedAt: 1747353600000},
 	},
 }
 
@@ -135,6 +200,14 @@ func (s *store) handleSubscriptions(w http.ResponseWriter, r *http.Request) {
 
 func (s *store) listSubs(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query().Get("q")
+	sourceType := r.URL.Query().Get("sourceType")
+	if sourceType == "" {
+		sourceType = "all"
+	}
+	if sourceType != "mp" && sourceType != "x" && sourceType != "all" {
+		writeErr(w, http.StatusBadRequest, "Invalid request parameters")
+		return
+	}
 	page, err := parseIntQuery(r, "page", 1)
 	if err != nil || page < 1 {
 		writeErr(w, http.StatusBadRequest, "Invalid page parameter")
@@ -149,12 +222,22 @@ func (s *store) listSubs(w http.ResponseWriter, r *http.Request) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	items := []subscription{}
-	for _, sub := range s.subs {
-		if q == "" || strings.Contains(sub.MPName, q) {
-			items = append(items, sub)
+	if sourceType == "mp" || sourceType == "all" {
+		for _, sub := range s.subs {
+			if q == "" || strings.Contains(sub.MPName, q) {
+				sub.SourceType = "mp"
+				items = append(items, sub)
+			}
 		}
 	}
-	// 简单分页（mock 不强求顺序稳定，e2e 校验 total/items 即可）
+	if sourceType == "x" || sourceType == "all" {
+		for _, sub := range s.xSubs {
+			if q == "" || strings.Contains(sub.XDisplayName, q) || strings.Contains(sub.XUsername, q) {
+				sub.SourceType = "x"
+				items = append(items, sub)
+			}
+		}
+	}
 	total := len(items)
 	start := (page - 1) * pageSize
 	end := start + pageSize
@@ -190,6 +273,7 @@ func (s *store) createSub(w http.ResponseWriter, r *http.Request) {
 	s.mu.Lock()
 	if _, ok := s.subs[mpID]; !ok {
 		s.subs[mpID] = subscription{
+			SourceType:      "mp",
 			MPID:            mpID,
 			MPName:          mpName,
 			MPAvatarURL:     nil,
@@ -251,6 +335,91 @@ func (s *store) listArticles(w http.ResponseWriter, r *http.Request, mpID int64)
 	writeJSON(w, http.StatusOK, map[string]any{"items": items})
 }
 
+// ============================================================================
+// X endpoints
+// ============================================================================
+//
+// X 账号搜索与订阅 / 取消订阅仅由 Web 控制台提供，Open API 不暴露这些写类
+// 端点；mock 仅模拟读类端点：list（参与 /open-api/subscriptions 合并） +
+// /{xUserId}/posts + /{xUserId}/articles。
+
+// 路径形如 /open-api/x/{xUserId}/posts | /open-api/x/{xUserId}/articles
+func (s *store) handleXContent(w http.ResponseWriter, r *http.Request) {
+	if !authOK(r) {
+		writeErr(w, http.StatusUnauthorized, "Feed key is invalid or revoked")
+		return
+	}
+	if r.Method != http.MethodGet {
+		writeErr(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+	rest := strings.TrimPrefix(r.URL.Path, "/open-api/x/")
+	parts := strings.SplitN(rest, "/", 2)
+	if len(parts) != 2 {
+		writeErr(w, http.StatusNotFound, "Not found")
+		return
+	}
+	xUserID := parts[0]
+	kind := parts[1]
+	page, _ := parseIntQuery(r, "page", 1)
+	pageSize, _ := parseIntQuery(r, "pageSize", 20)
+	if pageSize > 50 {
+		writeErr(w, http.StatusBadRequest, "Invalid request parameters")
+		return
+	}
+
+	s.mu.Lock()
+	_, subscribed := s.xSubs[xUserID]
+	s.mu.Unlock()
+	if !subscribed {
+		writeErr(w, http.StatusNotFound, "X account is not subscribed")
+		return
+	}
+
+	switch kind {
+	case "posts":
+		items := seedXPosts[xUserID]
+		if items == nil {
+			items = []xPost{}
+		}
+		writeJSON(w, http.StatusOK, map[string]any{
+			"items":    items,
+			"total":    len(items),
+			"page":     page,
+			"pageSize": pageSize,
+		})
+	case "articles":
+		items := seedXArticles[xUserID]
+		if items == nil {
+			items = []xArticle{}
+		}
+		writeJSON(w, http.StatusOK, map[string]any{
+			"items":    items,
+			"total":    len(items),
+			"page":     page,
+			"pageSize": pageSize,
+		})
+	default:
+		writeErr(w, http.StatusNotFound, "Not found")
+	}
+}
+
+// x router 总入口：只暴露读类端点 {xUserId}/{posts|articles}。
+// subscriptions / search-tasks 路径已下线，命中即 404。
+func (s *store) handleXRoot(w http.ResponseWriter, r *http.Request) {
+	rest := strings.TrimPrefix(r.URL.Path, "/open-api/x/")
+	switch {
+	case rest == "subscriptions" || rest == "subscriptions/" ||
+		strings.HasPrefix(rest, "subscriptions/") ||
+		rest == "search-tasks" || rest == "search-tasks/" ||
+		strings.HasPrefix(rest, "search-tasks/"):
+		writeErr(w, http.StatusNotFound, "Not found")
+	default:
+		// 形如 {xUserId}/posts / {xUserId}/articles
+		s.handleXContent(w, r)
+	}
+}
+
 func main() {
 	port := flag.Int("port", 0, "listen port (0 = random)")
 	flag.Parse()
@@ -266,6 +435,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/open-api/subscriptions", s.handleSubscriptions)
 	mux.HandleFunc("/open-api/subscriptions/", s.handleSubByID)
+	mux.HandleFunc("/open-api/x/", s.handleXRoot)
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = fmt.Fprint(w, "ok")
 	})

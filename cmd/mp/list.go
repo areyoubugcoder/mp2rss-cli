@@ -25,7 +25,8 @@ func newListCmd(deps *cliopts.Deps) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			list, err := c.ListSubscriptions(flagQuery, flagPage, flagPageSize)
+			// 主动用 sourceType=mp 过滤，避免 server 端返回 X 订阅时 mp 表格里掺杂空 mpId 行。
+			list, err := c.ListSubscriptionsFiltered(flagQuery, "mp", flagPage, flagPageSize)
 			if err != nil {
 				return err
 			}
