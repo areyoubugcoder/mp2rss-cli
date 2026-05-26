@@ -86,8 +86,7 @@ Mp2rss 在 `skills/` 目录提供 agent skills，让 AI Agent（Claude Code / Cu
 
 - [`mp2rss-auth`](skills/mp2rss-auth/SKILL.md) —— 登录态管理（login / logout / status）
 - [`mp2rss-mp`](skills/mp2rss-mp/SKILL.md) —— 公众号订阅与文章查询
-
-> X 命令组目前仅 CLI 直接调用；对应 agent skill 规划中。
+- [`mp2rss-x`](skills/mp2rss-x/SKILL.md) —— X 账号已订阅列表、推文流与长文流（只读 3 件套；订阅 / 取消订阅 / 搜索请到 Web 控制台）
 
 完整安装与使用步骤见 **[AI Agent 安装指南](docs/agent-install.md)**。
 
@@ -98,7 +97,7 @@ Mp2rss 在 `skills/` 目录提供 agent skills，让 AI Agent（Claude Code / Cu
 pnpm add -g @mp2rss/cli
 
 # 2. 装 Skills，任选其一
-npx skills add areyoubugcoder/mp2rss-cli -y -g          # Claude Code / Cursor 通用，一次装齐两个 skill
+npx skills add areyoubugcoder/mp2rss-cli -y -g          # Claude Code / Cursor 通用，一次装齐三个 skill
 /plugin marketplace add areyoubugcoder/mp2rss-cli       # Claude Code 内置 plugin marketplace
 /plugin install mp2rss-cli@mp2rss
 

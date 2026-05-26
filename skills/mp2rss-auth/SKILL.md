@@ -33,7 +33,7 @@ mp2rss auth login [-k <feed-key>] [--no-browser]
 | Mode | Command | Description |
 |------|---------|-------------|
 | 浏览器（默认） | `mp2rss auth login` | 打开浏览器走 loopback 授权，登录后自动写入 `~/.mp2rss/config.json` |
-| Feed Key 直传 | `mp2rss auth login -k <feed-key>` | 直接传入 Feed Key，跳过浏览器，常用于 CI / 无头环境 |
+| Feed Key 直传 | `mp2rss auth login -k <feed-key>` | 直接传入 Feed Key，**先调用上游 `VerifyAuth` 校验，校验通过后写入 `~/.mp2rss/config.json`**，跳过浏览器流程；适用于 CI / 无头环境 |
 | 远程模式 | `mp2rss auth login --no-browser` | 不打开浏览器，仅打印授权 URL，复制到本地浏览器打开后手动粘贴 Feed Key |
 
 ```bash
@@ -68,10 +68,14 @@ JSON shape（已登录）：
   "source": "config",
   "apiUrl": "https://mp2rss.bugcode.dev",
   "feedKeyMasked": "abcdef***",
+  "name": "张三",
+  "email": "user@example.com",
   "lastLoginAt": 1705000000000,
   "lastVerifyAt": 1705000001000
 }
 ```
+
+`name` / `email` 仅在浏览器登录回调成功时落盘；`-k` / `--no-browser` 流程拿不到这两个字段，会以 `omitempty` 省略。
 
 JSON shape（未登录）：
 ```json
@@ -100,7 +104,7 @@ mp2rss auth logout
 
 - 调用 `mp2rss mp` 任何子命令前如不确定登录状态，应先 `mp2rss auth status -o json` 解析 `loggedIn` 字段
 - 时间字段均为 unix 毫秒数（number），不是格式化字符串
-- 字段命名统一 camelCase（`loggedIn` / `apiUrl` / `feedKeyMasked` / `lastLoginAt` / `lastVerifyAt`）
+- 字段命名统一 camelCase（`loggedIn` / `apiUrl` / `feedKeyMasked` / `name` / `email` / `lastLoginAt` / `lastVerifyAt`）
 - 本地配置：`~/.mp2rss/config.json`，目录 `0700` / 文件 `0600`
 - Feed Key 优先级（高 → 低）：命令行 `--api-key` > `MP2RSS_FEED_KEY` 环境变量 > 配置文件
 - API URL 优先级（高 → 低）：`--api-url` > `MP2RSS_API_URL` > 配置文件 > 默认 `https://mp2rss.bugcode.dev`
