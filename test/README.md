@@ -8,7 +8,7 @@
 |---|---|
 | `e2e.sh` | bash 端到端脚本，覆盖 plan「端到端验证（阶段一聚焦）」6 大检查项；运行后生成 `e2e-report.md`。 |
 | `mock-api/main.go` | 最小 Go httptest server，模拟 Mp2rss Open API（4 个 endpoint，内存存储）。仅在未提供真实 `MP2RSS_TEST_FEED_KEY` 时由 `e2e.sh` 自动启动作为替身。 |
-| `e2e-report.md` | `e2e.sh` 每次运行后覆盖写入的报告。**生成物，不要手改。** |
+| `e2e-report*.md` | `e2e.sh` 运行后在本目录生成的报告（含 stage2），已 gitignore，不进仓库。**生成物，不要手改。** |
 
 ## 重要：mock-api 不是产线依赖
 
@@ -34,11 +34,4 @@ export MP2RSS_TEST_ARTICLE_URL=https://mp.weixin.qq.com/s/<一篇真实文章>
 ./test/e2e.sh
 ```
 
-环境变量优先级与默认值见 `e2e.sh` 顶部注释。
-
-## 当前状态
-
-骨架阶段（Tasks #2/#3 完成前）：
-
-- `e2e.sh` 已能完整跑通，基础设施（环境变量解析、临时 HOME 沙箱、mock 自启与回收、报告生成）就绪。
-- 6 个 step 中只有 step 1（git identity）做实校验，其余 5 个均输出 `SKIP`，待 CLI 命令、Makefile、release-please 配置就绪后逐个把 step 函数内的 `TODO` 替换为真实调用。
+环境变量优先级与默认值见 `e2e.sh` 顶部注释，当前覆盖范围以 `e2e.sh` 内 step 注释为准。
