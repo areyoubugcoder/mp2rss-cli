@@ -8,6 +8,7 @@ import (
 
 	"github.com/areyoubugcoder/mp2rss-cli/cmd/auth"
 	"github.com/areyoubugcoder/mp2rss-cli/cmd/mp"
+	skillscmd "github.com/areyoubugcoder/mp2rss-cli/cmd/skills"
 	"github.com/areyoubugcoder/mp2rss-cli/cmd/update"
 	xcmd "github.com/areyoubugcoder/mp2rss-cli/cmd/x"
 	"github.com/areyoubugcoder/mp2rss-cli/internal/cliopts"
@@ -59,6 +60,7 @@ func newRootCmd() *cobra.Command {
 	root.AddCommand(mp.NewCmd(deps))
 	root.AddCommand(xcmd.NewCmd(deps))
 	root.AddCommand(update.NewCmd())
+	root.AddCommand(skillscmd.NewCmd(deps))
 
 	return root
 }

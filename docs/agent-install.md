@@ -19,6 +19,8 @@ pnpm add -g @mp2rss/cli
 npx -y skills add areyoubugcoder/mp2rss-cli -y -g
 ```
 
+CLI ≥ 1.2.0 也可用内置命令代替上面第二步：`mp2rss skills sync --global`。之后每次 `mp2rss update` 升级二进制时会顺带把本地 skills 同步到新版本（`--skip-skills` 跳过），`mp2rss skills status` 可随时查看是否漂移。
+
 > OpenClaw 用户改用 ClawHub 安装 skill：`openclaw skills install mp2rss`（或 `clawhub install mp2rss`），对应本仓库 `openclaw/mp2rss/` 目录的单入口形态。
 
 ## 第 2 步 登录

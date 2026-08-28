@@ -103,6 +103,7 @@ Mp2rss 以两种形态提供 agent skills，同仓库维护、内容同步：
 pnpm add -g @mp2rss/cli
 
 # 2. 装 Skills，任选其一
+mp2rss skills sync --global                             # CLI ≥ 1.2.0 内置，之后 mp2rss update 会顺带同步
 npx skills add areyoubugcoder/mp2rss-cli -y -g          # Claude Code / Cursor 通用，一次装齐三个 skill
 /plugin marketplace add areyoubugcoder/mp2rss-cli       # Claude Code 内置 plugin marketplace
 /plugin install mp2rss-cli@mp2rss

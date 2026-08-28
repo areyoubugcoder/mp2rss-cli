@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 这是一个 **Go 编写的 CLI**（`mp2rss`），把微信公众号与 X 账号转成 RSS/Atom/JSON Feed。
 
-- 入口 `main.go` → `cmd.Execute()`，命令树在 `cmd/` 下（`auth` / `mp` / `x` / `update`），用 [cobra](https://github.com/spf13/cobra)。
+- 入口 `main.go` → `cmd.Execute()`，命令树在 `cmd/` 下（`auth` / `mp` / `x` / `update` / `skills`），用 [cobra](https://github.com/spf13/cobra)。
 - 业务逻辑都在 `internal/`（`authflow`、`client`、`config`、`output`、`errs` 等），不要在 `cmd/` 里堆逻辑。
 - `npm/` 只是发布用的薄壳：`postinstall` 时下载对应平台的 Go 二进制，**不包含任何业务逻辑**。改功能改 Go，不要改 `npm/`。动到 `npm/` 时用 **pnpm**，不要用 npm/yarn。
 

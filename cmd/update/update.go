@@ -30,6 +30,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/areyoubugcoder/mp2rss-cli/internal/skills"
 	"github.com/areyoubugcoder/mp2rss-cli/internal/version"
 	"github.com/spf13/cobra"
 )
@@ -51,8 +52,9 @@ var DownloadBase = func() string {
 // NewCmd returns the `mp2rss update` command.
 func NewCmd() *cobra.Command {
 	var (
-		flagCheck bool
-		flagForce bool
+		flagCheck      bool
+		flagForce      bool
+		flagSkipSkills bool
 	)
 	cmd := &cobra.Command{
 		Use:   "update",
@@ -60,20 +62,23 @@ func NewCmd() *cobra.Command {
 		Long: `检查 GitHub Releases 中的最新 mp2rss-cli 版本：
 * --check: 仅查询不下载，已是最新返回退出码 0，有新版本返回 0 并打印；
 * --force: 即使本地版本与远端一致也强制重新下载替换；
-* 默认: 有新版本则下载、校验 checksums.txt（SHA-256）、原子替换当前二进制。
+* --skip-skills: 本次更新不同步本地 Agent Skills；
+* 默认: 有新版本则下载、校验 checksums.txt（SHA-256）、原子替换当前二进制，
+  并在之前通过 mp2rss skills sync 装过 skills 时顺带同步到新版本。
 
 通过 npm / Homebrew / 包管理器安装的用户更建议用对应方式更新（avoid 自身覆盖）。`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			out := cmd.OutOrStdout()
-			return run(out, flagCheck, flagForce)
+			return run(out, flagCheck, flagForce, flagSkipSkills)
 		},
 	}
 	cmd.Flags().BoolVar(&flagCheck, "check", false, "仅检查是否有新版本，不下载")
 	cmd.Flags().BoolVar(&flagForce, "force", false, "强制重新下载并替换，即使版本相同")
+	cmd.Flags().BoolVar(&flagSkipSkills, "skip-skills", false, "本次更新不同步本地 Agent Skills")
 	return cmd
 }
 
-func run(out io.Writer, check, force bool) error {
+func run(out io.Writer, check, force, skipSkills bool) error {
 	fmt.Fprintln(out, "🔎 正在查询最新版本…")
 	latest, err := fetchLatestTag()
 	if err != nil {
@@ -102,7 +107,35 @@ func run(out io.Writer, check, force bool) error {
 		fmt.Fprintf(out, "⬆ 升级 %s → %s\n", current, latest)
 	}
 
-	return doUpdate(out, latest)
+	if err := doUpdate(out, latest); err != nil {
+		return err
+	}
+	if !skipSkills {
+		maybeSyncSkills(out, latest)
+	}
+	return nil
+}
+
+// maybeSyncSkills follows up a binary update by syncing local Agent Skills to
+// the new version — but only for users who previously opted in by running
+// `mp2rss skills sync` (a state file exists). Failures are non-fatal: the
+// binary update itself already succeeded.
+func maybeSyncSkills(out io.Writer, latest string) {
+	st := skills.ReadState()
+	if st == nil {
+		fmt.Fprintln(out, "ℹ 使用 Agent Skills 的话，可运行 `mp2rss skills sync` 同步到新版本。")
+		return
+	}
+	if version.Compare(st.Version, latest) == 0 {
+		return
+	}
+	fmt.Fprintf(out, "⏳ 同步本地 skills 到 %s（%s）…\n", latest, st.Scope)
+	res, err := skills.Sync(st.Scope, latest)
+	if err != nil {
+		fmt.Fprintf(out, "⚠ skills 同步失败（不影响本次更新）：%v\n  可稍后手动运行 `mp2rss skills sync`。\n", err)
+		return
+	}
+	fmt.Fprintf(out, "✓ 已同步 %d 个 skills 到 %s\n", len(res.Skills), res.Version)
 }
 
 func doUpdate(out io.Writer, latest string) error {

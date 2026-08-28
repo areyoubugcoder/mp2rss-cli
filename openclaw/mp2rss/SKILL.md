@@ -9,7 +9,7 @@ description: |
   (3) 用户要操作 **X（Twitter）账号**：「我订阅了哪些 X 账号」「@elonmusk 最近发了啥」「拉一下某个 X 号的推文 / 长文」（注：X 的订阅 / 取消订阅仅在 Web 控制台，CLI 只能列出已订阅与拉内容）
   (4) 用户要管理**登录态**：「登录公众号 RSS 服务」「登出 mp2rss」「我的 Feed Key 是什么」「我在 mp2rss 里登录了吗」
   (5) 用户要**安装 / 配置 Mp2rss CLI**：「装 mp2rss」「升级 mp2rss」「mp2rss 配置在哪里」
-version: 0.2.1
+version: 0.2.2
 metadata:
   openclaw:
     requires:
@@ -174,7 +174,8 @@ Exit code 速查：
 | `mp2rss x list [-q <kw>] [-p <page>] [--page-size <n>] [-o json]` | 列出已订阅 X 账号 | [x.md](references/x.md#list) |
 | `mp2rss x posts <xUserId> [-p <page>] [--page-size <n>] [-o json]` | 拉 X 推文流 | [x.md](references/x.md#posts) |
 | `mp2rss x articles <xUserId> [-p <page>] [--page-size <n>] [-o json]` | 拉 X 长文流 | [x.md](references/x.md#articles) |
-| `mp2rss update [--check]` | 升级 CLI | [install.md](references/install.md#升级) |
+| `mp2rss update [--check] [--skip-skills]` | 升级 CLI | [install.md](references/install.md#升级) |
+| `mp2rss skills sync [--global] / status / list` | 同步 / 查看 Agent Skills（CLI ≥ 1.2.0） | [install.md](references/install.md#agent-skills-同步cli--120) |
 
 > X 写类（搜索 / 订阅 / 取消订阅）**不存在对应 CLI 命令**，仅 Web 控制台提供，详见 [x.md](references/x.md#关键边界x-订阅必须在-web-控制台完成)。
 

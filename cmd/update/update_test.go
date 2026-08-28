@@ -72,7 +72,7 @@ func TestRunCheck_UpToDate(t *testing.T) {
 	version.Version = "v1.0.0"
 
 	var buf bytes.Buffer
-	if err := run(&buf, true /*check*/, false); err != nil {
+	if err := run(&buf, true /*check*/, false, false); err != nil {
 		t.Fatalf("run: %v", err)
 	}
 	if !strings.Contains(buf.String(), "已是最新") {
@@ -94,7 +94,7 @@ func TestRunCheck_HasUpdate(t *testing.T) {
 	version.Version = "v1.0.0"
 
 	var buf bytes.Buffer
-	if err := run(&buf, true, false); err != nil {
+	if err := run(&buf, true, false, false); err != nil {
 		t.Fatalf("run: %v", err)
 	}
 	out := buf.String()
