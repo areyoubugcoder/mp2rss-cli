@@ -24,7 +24,7 @@ ClawHub 发布流程（skills 内容有实质变更时）：
 1. bump `openclaw/mp2rss/package.json#version` 与 `openclaw/mp2rss/SKILL.md` frontmatter 的 `version`（两处保持一致）；
 2. `clawhub skill publish openclaw/mp2rss --slug mp2rss --version <X.Y.Z> --changelog "<中文变更说明>"`（需 `clawhub login` 登录态）。
 
-ClawHub 版本号独立于 CLI 版本（release-please 管 CLI，ClawHub 手动发），不要混用。
+ClawHub 版本号独立于 CLI 版本（CLI 版本来自 git tag，ClawHub 手动发），不要混用。
 
 ## 常用命令（Go 1.21+）
 
@@ -54,4 +54,4 @@ ClawHub 版本号独立于 CLI 版本（release-please 管 CLI，ClawHub 手动�
 
 - 提交信息用 Conventional Commits + 中文描述，例如 `feat(mp): 新增订阅命令`、`fix(authflow): 修正 CORS 白名单`。
 - 允许直接提交到 `main`。
-- 版本发布走 `release-please`（见 `.github/workflows/release.yml`），不要手动改版本号。
+- 版本发布：打 `v*` tag 并推送即触发 `.github/workflows/release.yml`（交叉编译 → GitHub Release → npm 发布，版本号由 CI 从 tag 注入），不要手动改版本号。仓库没有 release-please。
