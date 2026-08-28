@@ -82,11 +82,17 @@ mp2rss mp list -o json | jq '.items[].mpName'   # 所有命令支持 -o json
 
 ## AI Agent 如何使用
 
-Mp2rss 在 `skills/` 目录提供 agent skills，让 AI Agent（Claude Code / Cursor）用自然语言驱动 CLI：
+Mp2rss 以两种形态提供 agent skills，同仓库维护、内容同步：
+
+**Claude Code / Cursor（`skills/` 目录，按域拆分）**
 
 - [`mp2rss-auth`](skills/mp2rss-auth/SKILL.md) —— 登录态管理（login / logout / status）
 - [`mp2rss-mp`](skills/mp2rss-mp/SKILL.md) —— 公众号订阅与文章查询
 - [`mp2rss-x`](skills/mp2rss-x/SKILL.md) —— X 账号已订阅列表、推文流与长文流（只读 3 件套；订阅 / 取消订阅 / 搜索请到 Web 控制台）
+
+**OpenClaw（[`openclaw/mp2rss/`](openclaw/mp2rss/) 目录，单入口路由 + references 子文档）**
+
+- 发布在 ClawHub，slug `mp2rss`：`openclaw skills install mp2rss`（或 `clawhub install mp2rss`）
 
 完整安装与使用步骤见 **[AI Agent 安装指南](docs/agent-install.md)**。
 

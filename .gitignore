@@ -1,8 +1,8 @@
 # Binaries
 /dist/
 /bin/
-mp2rss
-mp2rss.exe
+/mp2rss
+/mp2rss.exe
 *.exe
 *.test
 *.out

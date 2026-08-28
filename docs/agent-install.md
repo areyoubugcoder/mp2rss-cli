@@ -19,6 +19,8 @@ pnpm add -g @mp2rss/cli
 npx -y skills add areyoubugcoder/mp2rss-cli -y -g
 ```
 
+> OpenClaw 用户改用 ClawHub 安装 skill：`openclaw skills install mp2rss`（或 `clawhub install mp2rss`），对应本仓库 `openclaw/mp2rss/` 目录的单入口形态。
+
 ## 第 2 步 登录
 
 Agent 运行以下命令，并提取授权链接发给用户。

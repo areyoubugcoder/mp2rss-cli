@@ -8,7 +8,7 @@
     {
       "name": "mp2rss-cli",
       "source": "./",
-      "description": "Agent skills for the Mp2rss CLI: auth / mp",
+      "description": "Agent skills for the Mp2rss CLI: auth / mp / x",
       "homepage": "https://mp2rss.bugcode.dev",
       "repository": "https://github.com/areyoubugcoder/mp2rss-cli",
       "license": "MIT",

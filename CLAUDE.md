@@ -10,6 +10,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 业务逻辑都在 `internal/`（`authflow`、`client`、`config`、`output`、`errs` 等），不要在 `cmd/` 里堆逻辑。
 - `npm/` 只是发布用的薄壳：`postinstall` 时下载对应平台的 Go 二进制，**不包含任何业务逻辑**。改功能改 Go，不要改 `npm/`。动到 `npm/` 时用 **pnpm**，不要用 npm/yarn。
 
+## Agent Skills 双形态（skills/ 与 openclaw/）
+
+同一套 agent 使用说明以**两种形态**存在于本仓库，面向不同生态，**改 CLI 行为时必须两边同步**：
+
+- `skills/mp2rss-{auth,mp,x}/SKILL.md` —— Claude Code / Cursor 形态，按域拆成 3 个 skill。经 `.claude-plugin/`（plugin marketplace）与 `npx skills add areyoubugcoder/mp2rss-cli` 分发。
+- `openclaw/mp2rss/` —— OpenClaw / ClawHub 形态：单入口 `SKILL.md`（路由）+ `references/{auth,mp,x,errors,install}.md`。由 `mp2rss-openclaw` 独立仓库迁入（该仓库已废弃），发布到 ClawHub，slug 为 `mp2rss`。**必须保持两层嵌套**（`openclaw/mp2rss/SKILL.md` 而非 `openclaw/SKILL.md`）：`npx skills add` 会把仓库根下一层深的 `*/SKILL.md` 当作 skill 安装，嵌套两层才不会被 Claude 侧安装误捡（已实测验证）。
+
+同步纪律（延伸自「协议改动必须同步文档」）：任何命令 / flag / JSON 字段 / 退出码 / 错误 envelope 的改动，`skills/` 与 `openclaw/mp2rss/references/` 都要改，**以 CLI 实际行为为准**（不确定就跑 `./mp2rss ... -o json` 实测，不要照抄旧文档）。已知易错点：HTTP 403 / 429 均映射到 exit 1（`internal/client` 未特判），不是 3 / 5。
+
+ClawHub 发布流程（skills 内容有实质变更时）：
+
+1. bump `openclaw/mp2rss/package.json#version` 与 `openclaw/mp2rss/SKILL.md` frontmatter 的 `version`（两处保持一致）；
+2. `clawhub skill publish openclaw/mp2rss --slug mp2rss --version <X.Y.Z> --changelog "<中文变更说明>"`（需 `clawhub login` 登录态）。
+
+ClawHub 版本号独立于 CLI 版本（release-please 管 CLI，ClawHub 手动发），不要混用。
+
 ## 常用命令（Go 1.21+）
 
 - 构建：`make build`（带 trimpath/ldflags，产物 `./mp2rss`）；交叉编译 `make build-all`（输出到 `dist/`）。
