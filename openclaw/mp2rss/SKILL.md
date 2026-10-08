@@ -88,7 +88,7 @@ Exit code 速查：
 | Code | 含义 | Agent 处理 |
 |------|------|-----------|
 | 0 | 成功 | 解析 stdout |
-| 1 | 通用错误（网络 / cobra 解析层：缺参、flag 值非法，此类输出裸文本非 JSON） | 网络类报告 + 建议稍后重试；解析类修正参数 |
+| 1 | 通用错误（网络 / cobra 解析层：缺参、flag 值非法，此类输出裸文本非 JSON / 限流 429 且 envelope `kind: "rate_limited"`） | 网络类报告 + 建议稍后重试；解析类修正参数；限流不要立刻重试，转告 message 里的解锁时间 |
 | 2 | 参数错误（业务校验层） | 检查参数；若是 `mp subscribe` 检查 URL 格式 |
 | 3 | 鉴权失败 | 引导跑 `mp2rss auth login`（见 [auth.md](references/auth.md)） |
 | 4 | 资源不存在 | mpId 错 / 文章 URL 失效 / **X 账号未订阅**（典型 message `X account is not subscribed`） |

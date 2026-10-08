@@ -17,7 +17,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `skills/mp2rss-{auth,mp,x}/SKILL.md` —— Claude Code / Cursor 形态，按域拆成 3 个 skill。经 `.claude-plugin/`（plugin marketplace）与 `npx skills add areyoubugcoder/mp2rss-cli` 分发。
 - `openclaw/mp2rss/` —— OpenClaw / ClawHub 形态：单入口 `SKILL.md`（路由）+ `references/{auth,mp,x,errors,install}.md`。由 `mp2rss-openclaw` 独立仓库迁入（该仓库已废弃），发布到 ClawHub，slug 为 `mp2rss`。**必须保持两层嵌套**（`openclaw/mp2rss/SKILL.md` 而非 `openclaw/SKILL.md`）：`npx skills add` 会把仓库根下一层深的 `*/SKILL.md` 当作 skill 安装，嵌套两层才不会被 Claude 侧安装误捡（已实测验证）。
 
-同步纪律（延伸自「协议改动必须同步文档」）：任何命令 / flag / JSON 字段 / 退出码 / 错误 envelope 的改动，`skills/` 与 `openclaw/mp2rss/references/` 都要改，**以 CLI 实际行为为准**（不确定就跑 `./mp2rss ... -o json` 实测，不要照抄旧文档）。已知易错点：HTTP 403 / 429 均映射到 exit 1（`internal/client` 未特判），不是 3 / 5。
+同步纪律（延伸自「协议改动必须同步文档」）：任何命令 / flag / JSON 字段 / 退出码 / 错误 envelope 的改动，`skills/` 与 `openclaw/mp2rss/references/` 都要改，**以 CLI 实际行为为准**（不确定就跑 `./mp2rss ... -o json` 实测，不要照抄旧文档）。已知易错点：HTTP 403 / 429 均映射到 exit 1，不是 3 / 5；其中 429 自 2026-10 起由 `internal/client` 特判——按 `Retry-After` 等待（上限 `--max-retry-wait` / `MP2RSS_MAX_RETRY_WAIT`，默认 90s）重试一次，放弃时 `errs.Error.Kind = rate_limited` 并进 JSON envelope 的 `error.kind`；另有跨进程最小请求间隔（`~/.mp2rss/.last-request` + flock，`MP2RSS_MIN_INTERVAL_MS` 默认 1200）。改这两处要同步 `openclaw/mp2rss/references/errors.md` 的「被限流」样例。
 
 ClawHub 发布流程（skills 内容有实质变更时）：
 

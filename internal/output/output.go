@@ -164,12 +164,20 @@ type ErrorEnvelope struct {
 type errorBody struct {
 	Message string `json:"message"`
 	Code    int    `json:"code"`
+	// Kind is an optional classification (e.g. "rate_limited"); omitted when empty
+	// so existing consumers see the unchanged two-field shape.
+	Kind string `json:"kind,omitempty"`
 }
 
 // PrintErrorJSON writes {"error":{"message":..., "code":...}} to w (stdout).
 // httpOrExitCode is the HTTP status if known, otherwise the exit code.
 func PrintErrorJSON(w io.Writer, message string, httpOrExitCode int) {
-	_ = JSON(w, ErrorEnvelope{Error: errorBody{Message: message, Code: httpOrExitCode}})
+	PrintErrorJSONKind(w, message, httpOrExitCode, "")
+}
+
+// PrintErrorJSONKind is PrintErrorJSON plus an optional `kind` field.
+func PrintErrorJSONKind(w io.Writer, message string, httpOrExitCode int, kind string) {
+	_ = JSON(w, ErrorEnvelope{Error: errorBody{Message: message, Code: httpOrExitCode, Kind: kind}})
 }
 
 // FormatUnixMillis renders a millisecond UNIX timestamp in local time.

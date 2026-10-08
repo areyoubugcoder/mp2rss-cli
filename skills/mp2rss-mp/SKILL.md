@@ -173,4 +173,5 @@ JSON shape:
 - 取消订阅前应先 `mp2rss mp list -q <name>` 确认 mpId，避免误删
 - 文章列表无分页字段，依赖 `--page-size` 控制单次返回上限（最大 100）；分页继续查下一页用 `-p`
 - 错误 JSON 形态：`{"error":{"message":"...","code":<int>}}`；`code` 优先用 HTTP 状态码（来自上游），否则回退到 CLI exit code（参数 / 鉴权类错误）
+- 限流：服务端每个 Feed Key 60 次/分钟。CLI 自动把相邻请求间隔到 ≥ 1.2s 并按 `Retry-After` 等待重试一次；仍被拒时 envelope 带 `"kind":"rate_limited"`、message 含预计解锁时间——**不要立刻重试**，遍历多个 mpId 时串行调用
 - Exit codes：`0` 成功；`1` 通用错误（网络）；`2` 参数错误；`3` 鉴权失败 → 引导用户跑 `mp2rss auth login`（参考 `mp2rss-auth` skill）；`4` 资源不存在（mpId 错或文章 URL 已失效）；`5` 上游不可用

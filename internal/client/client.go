@@ -3,7 +3,11 @@
 // It handles:
 //   - Bearer auth (Feed Key)
 //   - User-Agent stamping
-//   - 30s timeout with one retry on 429 / 5xx
+//   - 30s timeout with one retry on 5xx / transport errors
+//   - 429: honour Retry-After (bounded by MaxRetryWait), retry once, then give up
+//     with a KindRateLimited error that tells the user when the lock lifts
+//   - a cross-process minimum interval between requests (file-backed) so a
+//     shell loop over subscriptions stays under the server's 60 req/min
 //   - decoding {"errorMessage":"..."} error bodies into typed errs.Error
 package client
 
@@ -16,9 +20,12 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/areyoubugcoder/mp2rss-cli/internal/errs"
@@ -28,23 +35,121 @@ import (
 // DefaultTimeout is the per-request HTTP timeout.
 const DefaultTimeout = 30 * time.Second
 
+// Server-side rate limit facts (docs/api/open-api.md): 60 req/min per feed key,
+// a breach locks the key for 600s. These only feed user-facing hints; the
+// authoritative numbers always come from the 429 response headers.
+const (
+	ServerRequestsPerMinute = 60
+	ServerLockoutDuration   = 10 * time.Minute
+)
+
+const (
+	// DefaultMaxRetryWait caps how long a 429 Retry-After may make us sleep
+	// before retrying once. Longer waits (the 600s lockout) fail fast instead:
+	// a cron job should exit and run again next tick, not hang for 10 minutes.
+	DefaultMaxRetryWait = 90 * time.Second
+	// DefaultMinInterval spaces consecutive requests from this machine at
+	// ~50 req/min — under the 60/min server limit with headroom for other
+	// clients sharing the key. Enforced across processes via a state file.
+	DefaultMinInterval = 1200 * time.Millisecond
+	// fallbackRetryAfter is used when a 429 carries no usable Retry-After
+	// (e.g. the nginx per-IP text 429).
+	fallbackRetryAfter = 2 * time.Second
+
+	envMaxRetryWait = "MP2RSS_MAX_RETRY_WAIT"  // seconds
+	envMinInterval  = "MP2RSS_MIN_INTERVAL_MS" // milliseconds
+)
+
+// Options tunes rate-limit behaviour. Zero values fall back to env / defaults
+// via DefaultOptions; tests construct explicit values.
+type Options struct {
+	// MaxRetryWait: a 429 whose Retry-After is <= this is waited out then
+	// retried once; larger → fail immediately with KindRateLimited. Negative
+	// = use default. 0 = never wait.
+	MaxRetryWait time.Duration
+	// MinInterval between consecutive requests from this host (all processes).
+	// Negative = use default. 0 = disabled.
+	MinInterval time.Duration
+	// ThrottleStatePath is the file holding the last-request timestamp. Empty
+	// = ~/.mp2rss/.last-request. Unwritable paths silently disable throttling
+	// (rate limiting is a courtesy, never a reason to fail a command).
+	ThrottleStatePath string
+}
+
+var (
+	defaultsMu          sync.Mutex
+	defaultMaxRetryWait = -1 * time.Second // -1 = resolve from env/default
+	defaultMinInterval  = -1 * time.Second
+)
+
+// SetDefaultMaxRetryWait overrides the process-wide default (set from the
+// --max-retry-wait flag). It takes precedence over the env variable.
+func SetDefaultMaxRetryWait(d time.Duration) {
+	defaultsMu.Lock()
+	defer defaultsMu.Unlock()
+	defaultMaxRetryWait = d
+}
+
+// DefaultOptions resolves options from flags (SetDefault*), then env, then
+// built-in defaults.
+func DefaultOptions() Options {
+	defaultsMu.Lock()
+	maxWait, minInt := defaultMaxRetryWait, defaultMinInterval
+	defaultsMu.Unlock()
+	if maxWait < 0 {
+		maxWait = DefaultMaxRetryWait
+		if v := os.Getenv(envMaxRetryWait); v != "" {
+			if n, err := strconv.Atoi(v); err == nil && n >= 0 {
+				maxWait = time.Duration(n) * time.Second
+			}
+		}
+	}
+	if minInt < 0 {
+		minInt = DefaultMinInterval
+		if v := os.Getenv(envMinInterval); v != "" {
+			if n, err := strconv.Atoi(v); err == nil && n >= 0 {
+				minInt = time.Duration(n) * time.Millisecond
+			}
+		}
+	}
+	return Options{MaxRetryWait: maxWait, MinInterval: minInt}
+}
+
 // Client is an mp2rss Open API client.
 type Client struct {
 	baseURL    string
 	feedKey    string
 	userAgent  string
 	httpClient *http.Client
+	opts       Options
+	throttle   *throttle
 }
 
-// New builds a Client. baseURL should NOT have a trailing slash.
+// New builds a Client with DefaultOptions. baseURL should NOT have a trailing slash.
 func New(baseURL, feedKey string) *Client {
-	return NewWithHTTP(baseURL, feedKey, &http.Client{Timeout: DefaultTimeout})
+	return NewWithOptions(baseURL, feedKey, &http.Client{Timeout: DefaultTimeout}, DefaultOptions())
 }
 
 // NewWithHTTP is the test-friendly constructor accepting a custom *http.Client.
 func NewWithHTTP(baseURL, feedKey string, httpClient *http.Client) *Client {
+	return NewWithOptions(baseURL, feedKey, httpClient, DefaultOptions())
+}
+
+// NewWithOptions is the fully explicit constructor.
+func NewWithOptions(baseURL, feedKey string, httpClient *http.Client, opts Options) *Client {
 	if httpClient == nil {
 		httpClient = &http.Client{Timeout: DefaultTimeout}
+	}
+	if opts.MaxRetryWait < 0 {
+		opts.MaxRetryWait = DefaultOptions().MaxRetryWait
+	}
+	if opts.MinInterval < 0 {
+		opts.MinInterval = DefaultOptions().MinInterval
+	}
+	if opts.ThrottleStatePath == "" {
+		if home, err := os.UserHomeDir(); err == nil {
+			opts.ThrottleStatePath = filepath.Join(home, ".mp2rss", ".last-request")
+		}
 	}
 	baseURL = strings.TrimRight(baseURL, "/")
 	return &Client{
@@ -52,8 +157,13 @@ func NewWithHTTP(baseURL, feedKey string, httpClient *http.Client) *Client {
 		feedKey:    feedKey,
 		userAgent:  fmt.Sprintf("mp2rss-cli/%s (%s/%s)", version.String(), runtime.GOOS, runtime.GOARCH),
 		httpClient: httpClient,
+		opts:       opts,
+		throttle:   newThrottle(opts.ThrottleStatePath, opts.MinInterval),
 	}
 }
+
+// Options returns the resolved options (for tests / diagnostics).
+func (c *Client) Options() Options { return c.opts }
 
 // BaseURL returns the resolved base URL.
 func (c *Client) BaseURL() string { return c.baseURL }
@@ -297,9 +407,14 @@ func (c *Client) do(method, path string, query url.Values, body any, out any) er
 	return c.doCtx(context.Background(), method, path, query, body, out)
 }
 
-// doCtx executes a request with one retry on 429 / 5xx. body, if non-nil, is
-// JSON-encoded; out, if non-nil, decodes the response body.
+// doCtx executes a request. Retry policy:
+//   - transport error / 5xx: one retry after a short backoff (unchanged)
+//   - 429: wait for Retry-After (<= opts.MaxRetryWait) then retry once; a
+//     Retry-After beyond the cap, or a second 429, fails immediately with a
+//     KindRateLimited error. We never hammer a locked key.
 //
+// Every attempt first passes the cross-process throttle (min interval).
+// body, if non-nil, is JSON-encoded; out, if non-nil, decodes the response body.
 // ctx is plumbed onto every request so callers can cancel mid-flight.
 func (c *Client) doCtx(ctx context.Context, method, path string, query url.Values, body any, out any) error {
 	full := c.baseURL + path
@@ -321,6 +436,10 @@ func (c *Client) doCtx(ctx context.Context, method, path string, query url.Value
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
 		// Bail early if the caller already canceled.
 		if err := ctx.Err(); err != nil {
+			return errs.Wrap(errs.CodeGeneric, err)
+		}
+
+		if err := c.throttle.wait(ctx); err != nil {
 			return errs.Wrap(errs.CodeGeneric, err)
 		}
 
@@ -346,7 +465,9 @@ func (c *Client) doCtx(ctx context.Context, method, path string, query url.Value
 			lastErr = err
 			// transport error → retry once
 			if attempt < maxAttempts {
-				time.Sleep(backoffFor(attempt))
+				if err := sleepCtx(ctx, backoffFor(attempt)); err != nil {
+					return errs.Wrap(errs.CodeGeneric, err)
+				}
 				continue
 			}
 			return errs.Newf(errs.CodeUpstreamDown, "网络错误：%s", err.Error())
@@ -358,16 +479,30 @@ func (c *Client) doCtx(ctx context.Context, method, path string, query url.Value
 		if readErr != nil {
 			lastErr = readErr
 			if attempt < maxAttempts {
-				time.Sleep(backoffFor(attempt))
+				if err := sleepCtx(ctx, backoffFor(attempt)); err != nil {
+					return errs.Wrap(errs.CodeGeneric, err)
+				}
 				continue
 			}
 			return errs.Wrap(errs.CodeGeneric, fmt.Errorf("reading response: %w", readErr))
 		}
 
-		// Retryable status?
-		if resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode >= 500 {
+		if resp.StatusCode == http.StatusTooManyRequests {
+			rl := parseRateLimit(resp.Header, time.Now())
+			if attempt < maxAttempts && rl.retryAfter <= c.opts.MaxRetryWait {
+				if err := sleepCtx(ctx, rl.retryAfter); err != nil {
+					return errs.Wrap(errs.CodeGeneric, err)
+				}
+				continue
+			}
+			return mapRateLimitError(respBody, rl, c.opts.MaxRetryWait)
+		}
+
+		if resp.StatusCode >= 500 {
 			if attempt < maxAttempts {
-				time.Sleep(backoffFor(attempt))
+				if err := sleepCtx(ctx, backoffFor(attempt)); err != nil {
+					return errs.Wrap(errs.CodeGeneric, err)
+				}
 				continue
 			}
 			return mapHTTPError(resp.StatusCode, respBody)
@@ -398,6 +533,121 @@ func backoffFor(attempt int) time.Duration {
 	default:
 		return time.Second
 	}
+}
+
+// sleepCtx sleeps for d unless ctx is canceled first.
+func sleepCtx(ctx context.Context, d time.Duration) error {
+	if d <= 0 {
+		return nil
+	}
+	t := time.NewTimer(d)
+	defer t.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-t.C:
+		return nil
+	}
+}
+
+// rateLimitInfo is what a 429 told us.
+type rateLimitInfo struct {
+	retryAfter time.Duration // how long the server asked us to wait
+	resetAt    time.Time     // absolute unlock time (zero if unknown)
+	limit      int           // X-RateLimit-Limit (0 if absent)
+}
+
+// parseRateLimit reads Retry-After (seconds or HTTP-date) and X-RateLimit-*
+// from a 429 response. Missing / malformed headers fall back to
+// fallbackRetryAfter so a header-less 429 still gets one gentle retry.
+func parseRateLimit(h http.Header, now time.Time) rateLimitInfo {
+	info := rateLimitInfo{}
+	haveRetryAfter := false
+	if v := strings.TrimSpace(h.Get("Retry-After")); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n >= 0 {
+			info.retryAfter = time.Duration(n) * time.Second
+			haveRetryAfter = true
+		} else if t, err := http.ParseTime(v); err == nil {
+			if d := t.Sub(now); d > 0 {
+				info.retryAfter = d
+			}
+			haveRetryAfter = true
+		}
+	}
+	if v := strings.TrimSpace(h.Get("X-RateLimit-Reset")); v != "" {
+		if n, err := strconv.ParseInt(v, 10, 64); err == nil && n > 0 {
+			info.resetAt = time.Unix(n, 0)
+		}
+	}
+	switch {
+	case !haveRetryAfter && !info.resetAt.IsZero():
+		// Retry-After unusable but an absolute reset is known → derive the wait.
+		if d := info.resetAt.Sub(now); d > 0 {
+			info.retryAfter = d
+		}
+	case !haveRetryAfter:
+		info.retryAfter = fallbackRetryAfter
+	}
+	if info.resetAt.IsZero() && info.retryAfter > 0 {
+		info.resetAt = now.Add(info.retryAfter)
+	}
+	if v := strings.TrimSpace(h.Get("X-RateLimit-Limit")); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			info.limit = n
+		}
+	}
+	return info
+}
+
+// mapRateLimitError builds the user-facing 429 error. Exit code stays 1 (the
+// CLI contract has no dedicated rate-limit code); Kind = rate_limited lets
+// scripts branch on `error.kind` in JSON mode.
+func mapRateLimitError(body []byte, rl rateLimitInfo, maxWait time.Duration) error {
+	msg := strings.TrimSpace(string(body))
+	if len(body) > 0 {
+		var apiErr apiError
+		if json.Unmarshal(body, &apiErr) == nil && apiErr.ErrorMessage != "" {
+			msg = apiErr.ErrorMessage
+		}
+	}
+	if msg == "" {
+		msg = "Too Many Requests"
+	}
+	limit := rl.limit
+	if limit == 0 {
+		limit = ServerRequestsPerMinute
+	}
+	var b strings.Builder
+	fmt.Fprintf(&b, "请求被限流（HTTP 429）：%s。", msg)
+	if !rl.resetAt.IsZero() {
+		fmt.Fprintf(&b, "预计 %s（本地时间，约 %s 后）解除，", rl.resetAt.Local().Format("15:04:05"), humanDuration(rl.retryAfter))
+	}
+	if rl.retryAfter > maxWait {
+		fmt.Fprintf(&b, "超过 --max-retry-wait（%s）未自动等待。", humanDuration(maxWait))
+	} else {
+		b.WriteString("已按 Retry-After 等待并重试一次仍被拒。")
+	}
+	fmt.Fprintf(&b, "服务端限制每分钟 %d 次请求；请减少并发、串行调用并加大请求间隔后再试", limit)
+	return &errs.Error{
+		Code:       errs.CodeGeneric,
+		HTTPStatus: http.StatusTooManyRequests,
+		Kind:       errs.KindRateLimited,
+		Message:    b.String(),
+		Cause:      errors.New(msg),
+	}
+}
+
+func humanDuration(d time.Duration) string {
+	d = d.Round(time.Second)
+	if d < time.Minute {
+		return fmt.Sprintf("%ds", int(d.Seconds()))
+	}
+	m := int(d.Minutes())
+	sec := int(d.Seconds()) % 60
+	if sec == 0 {
+		return fmt.Sprintf("%dm", m)
+	}
+	return fmt.Sprintf("%dm%ds", m, sec)
 }
 
 // mapHTTPError converts a non-2xx response into a typed *errs.Error.

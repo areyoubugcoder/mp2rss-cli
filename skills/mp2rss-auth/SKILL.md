@@ -108,5 +108,5 @@ mp2rss auth logout
 - 本地配置：`~/.mp2rss/config.json`，目录 `0700` / 文件 `0600`
 - Feed Key 优先级（高 → 低）：命令行 `--api-key` > `MP2RSS_FEED_KEY` 环境变量 > 配置文件
 - API URL 优先级（高 → 低）：`--api-url` > `MP2RSS_API_URL` > 配置文件 > 默认 `https://mp2rss.bugcode.dev`
-- 错误 JSON 形态：`{"error":{"message":"...","code":<int>}}`，`code` 为 HTTP 状态码或 CLI exit code
+- 错误 JSON 形态：`{"error":{"message":"...","code":<int>}}`，`code` 为 HTTP 状态码或 CLI exit code；被限流（429）时额外带 `"kind":"rate_limited"`，不要立刻重试
 - Exit codes：`0` 成功；`1` 通用错误（网络）；`2` 参数错误；`3` 鉴权失败；`4` 资源不存在；`5` 上游不可用

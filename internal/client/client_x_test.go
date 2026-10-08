@@ -29,7 +29,7 @@ func TestXListPostsHappy(t *testing.T) {
 		}`))
 	}))
 	defer srv.Close()
-	list, err := New(srv.URL, "k").XListPosts("44196397", 2, 20)
+	list, err := NewWithOptions(srv.URL, "k", nil, Options{MaxRetryWait: 0, MinInterval: 0}).XListPosts("44196397", 2, 20)
 	if err != nil {
 		t.Fatalf("err: %v", err)
 	}
@@ -44,7 +44,7 @@ func TestXListPosts404NotSubscribed(t *testing.T) {
 		_, _ = w.Write([]byte(`{"errorMessage":"X account is not subscribed"}`))
 	}))
 	defer srv.Close()
-	_, err := New(srv.URL, "k").XListPosts("404404", 1, 20)
+	_, err := NewWithOptions(srv.URL, "k", nil, Options{MaxRetryWait: 0, MinInterval: 0}).XListPosts("404404", 1, 20)
 	typed, ok := errs.As(err)
 	if !ok {
 		t.Fatalf("not typed: %v", err)
@@ -67,7 +67,7 @@ func TestXListPosts500RetryThenSucceed(t *testing.T) {
 		_, _ = w.Write([]byte(`{"items":[],"total":0,"page":1,"pageSize":20}`))
 	}))
 	defer srv.Close()
-	list, err := New(srv.URL, "k").XListPosts("1", 1, 20)
+	list, err := NewWithOptions(srv.URL, "k", nil, Options{MaxRetryWait: 0, MinInterval: 0}).XListPosts("1", 1, 20)
 	if err != nil {
 		t.Fatalf("expected success after retry: %v", err)
 	}
@@ -95,7 +95,7 @@ func TestXListArticlesHappy(t *testing.T) {
 		}`))
 	}))
 	defer srv.Close()
-	list, err := New(srv.URL, "k").XListArticles("44196397", 1, 20)
+	list, err := NewWithOptions(srv.URL, "k", nil, Options{MaxRetryWait: 0, MinInterval: 0}).XListArticles("44196397", 1, 20)
 	if err != nil {
 		t.Fatalf("err: %v", err)
 	}
@@ -110,7 +110,7 @@ func TestXListArticles401Auth(t *testing.T) {
 		_, _ = w.Write([]byte(`{"errorMessage":"Feed key is invalid or revoked"}`))
 	}))
 	defer srv.Close()
-	_, err := New(srv.URL, "k").XListArticles("1", 1, 20)
+	_, err := NewWithOptions(srv.URL, "k", nil, Options{MaxRetryWait: 0, MinInterval: 0}).XListArticles("1", 1, 20)
 	typed, ok := errs.As(err)
 	if !ok {
 		t.Fatalf("not typed: %v", err)
@@ -132,7 +132,7 @@ func TestListSubscriptionsFilteredPassesSourceType(t *testing.T) {
 		_, _ = w.Write([]byte(`{"items":[],"total":0,"page":1,"pageSize":20}`))
 	}))
 	defer srv.Close()
-	_, err := New(srv.URL, "k").ListSubscriptionsFiltered("", "x", 1, 20)
+	_, err := NewWithOptions(srv.URL, "k", nil, Options{MaxRetryWait: 0, MinInterval: 0}).ListSubscriptionsFiltered("", "x", 1, 20)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -153,7 +153,7 @@ func TestListSubscriptionsDecodesXItems(t *testing.T) {
 		}`))
 	}))
 	defer srv.Close()
-	list, err := New(srv.URL, "k").ListSubscriptions("", 1, 20)
+	list, err := NewWithOptions(srv.URL, "k", nil, Options{MaxRetryWait: 0, MinInterval: 0}).ListSubscriptions("", 1, 20)
 	if err != nil {
 		t.Fatal(err)
 	}

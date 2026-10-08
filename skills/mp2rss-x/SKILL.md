@@ -175,6 +175,7 @@ JSON shape:
 - **不存在的子命令**：`x subscribe` / `x remove` / `x search` —— 用户提相关需求时直接引导去 Web 控制台 <https://mp2rss.bugcode.dev>，不要去 CLI 里找替代命令
 - `x posts` / `x articles` **都带分页元数据**（`total` / `page` / `pageSize`）—— 这一点与 `mp articles`（无分页字段）不同，按 `total` 判断是否还有下一页即可
 - `--page-size` 三个命令一致上限 50；超过会返回 `参数错误`（exit code `2`）
+- 限流：与 mp 命令共用每个 Feed Key 60 次/分钟的额度；CLI 自动间隔 ≥ 1.2s 并按 `Retry-After` 等待重试一次，仍被拒时 envelope 带 `"kind":"rate_limited"`，不要立刻重试
 - `x list -q <kw>` 的 `-q` 走服务端模糊搜索 displayName / username；若服务端不识别，CLI 会退化为按 `sourceType=x` 客户端过滤（即 `-q` 失效，但不会报错）
 - 拿到 `xUserId` 的常规链路：先跑 `mp2rss x list -o json` 从 `items[].xUserId` 取，再喂给 `x posts` / `x articles`
 - 错误 JSON 形态：`{"error":{"message":"...","code":<int>}}`；`code` 优先用 HTTP 状态码（来自上游），否则回退到 CLI exit code（参数 / 鉴权类错误）

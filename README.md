@@ -72,6 +72,8 @@ mp2rss x articles <xUserId>         # 长文流
 mp2rss mp list -o json | jq '.items[].mpName'   # 所有命令支持 -o json
 ```
 
+遍历大量订阅（如逐个 `mp articles`）请**串行**调用、不要并发：服务端对每个 Feed Key 限制 **60 次/分钟**，超限锁定 10 分钟。CLI 自带两道保护——同一台机器上相邻两次请求自动间隔 ≥ 1.2s（`MP2RSS_MIN_INTERVAL_MS`，0 关闭），被限流（429）时按服务端 `Retry-After` 等待后重试一次，超过 `--max-retry-wait`（默认 90s，`MP2RSS_MAX_RETRY_WAIT`）则直接报错并给出解锁时间，`-o json` 下 `error.kind` 为 `rate_limited`。
+
 📖 **完整命令参考**（全部 flag、JSON schema、错误码、配置文件、全局参数）→ **[在线文档 · CLI](https://areyoubugcoder.github.io/Mp2RSS/cli/)**
 
 快捷入口：

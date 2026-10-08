@@ -5,12 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/areyoubugcoder/mp2rss-cli/cmd/auth"
 	"github.com/areyoubugcoder/mp2rss-cli/cmd/mp"
 	skillscmd "github.com/areyoubugcoder/mp2rss-cli/cmd/skills"
 	"github.com/areyoubugcoder/mp2rss-cli/cmd/update"
 	xcmd "github.com/areyoubugcoder/mp2rss-cli/cmd/x"
+	"github.com/areyoubugcoder/mp2rss-cli/internal/client"
 	"github.com/areyoubugcoder/mp2rss-cli/internal/cliopts"
 	"github.com/areyoubugcoder/mp2rss-cli/internal/config"
 	"github.com/areyoubugcoder/mp2rss-cli/internal/errs"
@@ -21,9 +23,10 @@ import (
 
 // Persistent flag values.
 var (
-	flagOutput string
-	flagAPIKey string
-	flagAPIURL string
+	flagOutput       string
+	flagAPIKey       string
+	flagAPIURL       string
+	flagMaxRetryWait int
 )
 
 func newRootCmd() *cobra.Command {
@@ -35,8 +38,14 @@ func newRootCmd() *cobra.Command {
 管理订阅列表，输出支持表格与 JSON 两种格式。
 
 支持环境变量：
-  MP2RSS_FEED_KEY   覆盖 Feed Key（优先级高于配置文件）
-  MP2RSS_API_URL    覆盖 API 地址`,
+  MP2RSS_FEED_KEY          覆盖 Feed Key（优先级高于配置文件）
+  MP2RSS_API_URL           覆盖 API 地址
+  MP2RSS_MAX_RETRY_WAIT    被限流（HTTP 429）时最多等待多少秒再重试一次（默认 90；0 = 不等待）
+  MP2RSS_MIN_INTERVAL_MS   同一台机器上相邻两次请求的最小间隔毫秒数（默认 1200，≈50 次/分钟；0 = 关闭）
+
+限流说明：服务端对每个 Feed Key 限制每分钟 60 次请求，超限锁定 10 分钟。
+CLI 会按服务端 Retry-After 等待后重试一次；需要遍历大量订阅时请在脚本里串行调用、
+不要并发，必要时自行加 sleep。`,
 		Version:           version.String(),
 		SilenceUsage:      true,
 		SilenceErrors:     true,
@@ -49,6 +58,7 @@ func newRootCmd() *cobra.Command {
 	root.PersistentFlags().StringVarP(&flagOutput, "output", "o", output.FormatTable, "输出格式：table 或 json")
 	root.PersistentFlags().StringVar(&flagAPIKey, "api-key", "", "覆盖 Feed Key（也可使用 MP2RSS_FEED_KEY 环境变量）")
 	root.PersistentFlags().StringVar(&flagAPIURL, "api-url", "", "覆盖 API 地址（默认 https://mp2rss.bugcode.dev）")
+	root.PersistentFlags().IntVar(&flagMaxRetryWait, "max-retry-wait", -1, "被限流（429）时最多等待多少秒再重试一次；-1 取环境变量 MP2RSS_MAX_RETRY_WAIT 或默认 90，0 = 不等待直接报错")
 
 	deps := &cliopts.Deps{
 		Output: func() string { return flagOutput },
@@ -78,10 +88,14 @@ func Execute() {
 		// JSON mode: error envelope on stdout for jq compatibility.
 		if flagOutput == output.FormatJSON {
 			httpOrCode := code
-			if typed != nil && typed.HTTPStatus != 0 {
-				httpOrCode = typed.HTTPStatus
+			kind := ""
+			if typed != nil {
+				if typed.HTTPStatus != 0 {
+					httpOrCode = typed.HTTPStatus
+				}
+				kind = typed.Kind
 			}
-			output.PrintErrorJSON(os.Stdout, msg, httpOrCode)
+			output.PrintErrorJSONKind(os.Stdout, msg, httpOrCode, kind)
 		} else {
 			fmt.Fprintln(os.Stderr, "✗", msg)
 		}
@@ -99,6 +113,9 @@ func persistentPreRunE(_ *cobra.Command, _ []string) error {
 	}
 	if flagAPIURL != "" {
 		cfg.APIURL = flagAPIURL
+	}
+	if flagMaxRetryWait >= 0 {
+		client.SetDefaultMaxRetryWait(time.Duration(flagMaxRetryWait) * time.Second)
 	}
 	return nil
 }

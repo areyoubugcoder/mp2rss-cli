@@ -21,6 +21,16 @@ const (
 	CodeUpstreamDown = 5
 )
 
+// Kind values classify errors beyond the numeric exit code. They surface in
+// the JSON envelope as `error.kind` so agents / scripts can branch without
+// parsing the message. Only set for cases that need distinct handling.
+const (
+	// KindRateLimited: upstream answered 429 and the CLI gave up waiting
+	// (Retry-After exceeded --max-retry-wait, or the retry hit 429 again).
+	// Exit code stays 1 (generic) per the CLI contract; `kind` is the signal.
+	KindRateLimited = "rate_limited"
+)
+
 // Error is a CLI-visible error with both a human message and an exit code.
 //
 // HTTPStatus is the upstream HTTP status code when the error originated from
@@ -28,6 +38,7 @@ const (
 type Error struct {
 	Code       int    // exit code
 	HTTPStatus int    // upstream HTTP status if any
+	Kind       string // optional classification (see Kind* constants); "" for most errors
 	Message    string // user-facing message
 	Cause      error  // wrapped underlying error (for `errors.Is/As`)
 }
